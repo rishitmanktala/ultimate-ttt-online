@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Tic Tac Toe - Online Multiplayer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-1: #0b0d12;
+            --bg-2: #0f172a;
+            --panel: rgba(17, 24, 39, 0.7);
+            --panel-strong: rgba(17, 24, 39, 0.92);
+            --accent: #2dd4bf;
+            --accent-2: #f59e0b;
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            min-height: 100vh;
+            background: radial-gradient(900px 700px at 10% -10%, rgba(45,212,191,0.15), transparent 55%),
+                        radial-gradient(900px 700px at 110% 0%, rgba(245,158,11,0.12), transparent 55%),
+                        linear-gradient(180deg, var(--bg-1), var(--bg-2));
+            color: var(--text);
+            overflow-x: hidden;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid rgba(148,163,184,0.16);
+            backdrop-filter: blur(12px);
+        }
+        .panel-strong {
+            background: var(--panel-strong);
+            border: 1px solid rgba(148,163,184,0.22);
+            backdrop-filter: blur(12px);
+        }
+        .chip {
+            border: 1px solid rgba(148,163,184,0.24);
+            background: rgba(15,23,42,0.65);
+        }
+        .drawer {
+            border: 1px solid rgba(148,163,184,0.16);
+            background: rgba(15,23,42,0.7);
+        }
+        .square.playable:hover::before {
+            content: attr(data-player-symbol);
+            position: absolute;
+            font-size: 1.5rem;
+            color: rgba(245, 158, 11, 0.35);
+            pointer-events: none;
+            z-index: 1;
+        }
+        @keyframes fade-in {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in { animation: fade-in 0.25s ease-out forwards; }
+        .dismiss-overlay:hover { cursor: pointer; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12">
+        <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+            <div>
+                <div class="chip inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    Online + AI + Autosave
+                </div>
+                <h1 class="text-3xl md:text-4xl font-semibold mt-3">Ultimate Tic Tac Toe</h1>
+                <p class="text-slate-400 mt-2 max-w-xl">Win 3 mini-grids in a row. Clean, fast, and playable on any device.</p>
+            </div>
+            <div id="status-chip" class="chip rounded-full px-4 py-2 text-xs text-slate-300"></div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6">
+            <div class="panel rounded-2xl p-5">
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <button id="drawer-player-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-slate-800 text-slate-200 hover:bg-slate-700">Player</button>
+                    <button id="drawer-ai-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-slate-800 text-slate-200 hover:bg-slate-700">AI</button>
+                </div>
+
+                <div id="drawer-player" class="drawer rounded-xl p-4 mb-4 hidden">
+                    <div class="text-xs uppercase tracking-widest text-slate-500 mb-3">Player</div>
+                    <div class="flex flex-col gap-2 text-sm font-semibold mb-4">
+                        <button data-mode="PVP" class="mode-select px-3 py-2 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700">Offline (Human vs Human)</button>
+                        <button data-mode="ONLINE" class="mode-select px-3 py-2 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700">Online (Human vs Human)</button>
+                    </div>
+
+                    <div class="text-xs uppercase tracking-widest text-slate-500 mb-3">Online Room</div>
+                    <div class="flex flex-wrap gap-2">
+                        <input id="room-input" type="text" placeholder="Room code" class="flex-1 min-w-[180px] p-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-400 outline-none" />
+                        <button id="create-room-btn" class="px-3 py-2 text-emerald-200 bg-emerald-900/40 hover:bg-emerald-800/50 rounded-lg text-sm font-semibold">Create</button>
+                        <button id="join-room-btn" class="px-3 py-2 text-cyan-200 bg-cyan-900/40 hover:bg-cyan-800/50 rounded-lg text-sm font-semibold">Join</button>
+                        <button id="leave-room-btn" class="px-3 py-2 text-rose-200 bg-rose-900/40 hover:bg-rose-800/50 rounded-lg text-sm font-semibold hidden">Leave</button>
+                    </div>
+                    <div id="online-status" class="mt-2 text-xs text-slate-400">Not connected.</div>
+                    <div class="mt-2 text-xs text-slate-500">Room codes auto-generate if left empty. First player is X, second is O.</div>
+                </div>
+
+                <div id="drawer-ai" class="drawer rounded-xl p-4 mb-4 hidden">
+                    <div class="text-xs uppercase tracking-widest text-slate-500 mb-3">AI</div>
+                    <div class="flex flex-col gap-2 text-sm font-semibold">
+                        <button data-mode="PVAI" class="mode-select px-3 py-2 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700">Player vs AI</button>
+                        <button data-mode="AIVAI" class="mode-select px-3 py-2 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700">AI vs AI</button>
+                    </div>
+
+                    <div id="ai-panel" class="mt-4 hidden">
+                        <div class="text-xs uppercase tracking-widest text-slate-500 mb-2">AI Difficulty</div>
+                        <div class="grid grid-cols-2 gap-2 text-sm font-semibold">
+                            <button data-difficulty="EASY" class="ai-select px-3 py-2 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700">Easy</button>
+                            <button data-difficulty="MEDIUM" class="ai-select px-3 py-2 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700">Medium</button>
+                            <button data-difficulty="HARD" class="ai-select px-3 py-2 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700">Hard</button>
+                            <button data-difficulty="GRANDMASTER" class="ai-select px-3 py-2 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700">Grandmaster</button>
+                        </div>
+                        <div class="mt-2 text-xs text-slate-500">Grandmaster uses a time budget to search deeper.</div>
+                    </div>
+
+                    <div id="ai-vs-ai-panel" class="mt-4 hidden">
+                        <div class="text-xs uppercase tracking-widest text-slate-500 mb-2">AI vs AI Setup</div>
+                        <div class="text-xs text-slate-500 mb-2">Choose difficulty for each side.</div>
+                        <div class="flex flex-col gap-4 text-sm font-semibold">
+                            <div class="flex items-start gap-3">
+                                <span class="text-slate-400 text-xs w-6 pt-2">X</span>
+                                <div class="grid grid-cols-2 gap-2 flex-1">
+                                    <button data-player="X" data-difficulty="EASY" class="ai-vs-select px-3 py-2 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700">Easy</button>
+                                    <button data-player="X" data-difficulty="MEDIUM" class="ai-vs-select px-3 py-2 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700">Medium</button>
+                                    <button data-player="X" data-difficulty="HARD" class="ai-vs-select px-3 py-2 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700">Hard</button>
+                                    <button data-player="X" data-difficulty="GRANDMASTER" class="ai-vs-select px-3 py-2 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700">Grandmaster</button>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <span class="text-slate-400 text-xs w-6 pt-2">O</span>
+                                <div class="grid grid-cols-2 gap-2 flex-1">
+                                    <button data-player="O" data-difficulty="EASY" class="ai-vs-select px-3 py-2 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700">Easy</button>
+                                    <button data-player="O" data-difficulty="MEDIUM" class="ai-vs-select px-3 py-2 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700">Medium</button>
+                                    <button data-player="O" data-difficulty="HARD" class="ai-vs-select px-3 py-2 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700">Hard</button>
+                                    <button data-player="O" data-difficulty="GRANDMASTER" class="ai-vs-select px-3 py-2 rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700">Grandmaster</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="drawer rounded-xl p-4">
+                    <div class="text-xs uppercase tracking-widest text-slate-500 mb-3">Tools</div>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="undo-btn" disabled class="px-3 py-2 text-amber-200 bg-amber-900/30 hover:bg-amber-800/40 rounded-lg text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed">Undo</button>
+                        <button id="reset-btn" class="px-3 py-2 text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-semibold">Reset</button>
+                        <button id="share-btn" class="px-3 py-2 text-cyan-200 bg-cyan-900/40 hover:bg-cyan-800/50 rounded-lg text-sm font-semibold">Share</button>
+                        <button id="load-modal-btn" class="px-3 py-2 text-rose-200 bg-rose-900/40 hover:bg-rose-800/50 rounded-lg text-sm font-semibold">Load</button>
+                    </div>
+                    <div class="mt-3 text-xs text-slate-500">Auto-save is always active.</div>
+                </div>
+            </div>
+
+            <div class="relative">
+                <div id="message-box" class="fixed top-4 right-4 bg-slate-900 text-sm px-4 py-2 rounded-lg text-white shadow-xl z-50 transition-opacity duration-500 opacity-0 pointer-events-none"></div>
+
+                <div class="relative">
+                    <div id="winner-overlay" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-md rounded-2xl animate-fade-in hidden dismiss-overlay"></div>
+                    <div class="w-full flex justify-center">
+                        <div id="game-grid" class="grid grid-cols-3 gap-2 md:gap-4 p-3 md:p-4 rounded-2xl shadow-2xl panel-strong"
+                             style="width: min(90vw, 640px); aspect-ratio: 1 / 1;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="load-modal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 rounded-xl p-8 max-w-sm w-full shadow-2xl border border-slate-800">
+            <h3 class="text-xl font-bold mb-4 text-white">Load Game</h3>
+            <p class="text-slate-400 mb-4 text-sm">Paste the share code below to load a specific game state.</p>
+            <input type="text" id="load-input" placeholder="Paste code here..." class="w-full p-3 mb-4 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-400 outline-none" />
+            <div class="flex justify-end gap-3">
+                <button id="modal-cancel-btn" class="px-4 py-2 text-slate-300 hover:text-white bg-slate-800 rounded-lg transition-colors text-sm">Cancel</button>
+                <button id="modal-load-btn" disabled class="px-4 py-2 bg-amber-500 text-slate-900 font-bold rounded-lg transition-transform text-sm disabled:opacity-50 disabled:cursor-not-allowed">Load</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const LOCAL_STORAGE_KEY = 'ultimateTicTacToeState';
+        const AI_THINK_TIME = 500;
+        const INITIAL_BOARDS_STATE = Array(9).fill(Array(9).fill(null));
+        const CHAR_TO_INT = { null: 0, 'X': 1, 'O': 2 };
+        const INT_TO_CHAR = { 0: null, 1: 'X', 2: 'O' };
+        const WINNING_LINES = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        const WS_URL = 'wss://ultimate-ttt-98bt.onrender.com';
+
+        let state = {
+            boards: JSON.parse(JSON.stringify(INITIAL_BOARDS_STATE)),
+            xIsNext: true,
+            nextBoard: null,
+            winner: null,
+            shareCode: '',
+            history: [],
+            historyIndex: 0,
+            gameMode: 'PVP',
+            aiDifficulty: 'MEDIUM',
+            aiDifficultyX: 'HARD',
+            aiDifficultyO: 'HARD',
+            aiTimeBudgetMs: 2000,
+            timer: 0,
+            timerInterval: null,
+            isAiThinking: false,
+            online: {
+                socket: null,
+                room: null,
+                role: null,
+                connected: false,
+                syncing: false
+            }
+        };
+
+        const gameGrid = document.getElementById('game-grid');
+        const statusChip = document.getElementById('status-chip');
+        const winnerOverlay = document.getElementById('winner-overlay');
+        const messageBox = document.getElementById('message-box');
+        const loadModal = document.getElementById('load-modal');
+        const loadInput = document.getElementById('load-input');
+        const modalLoadBtn = document.getElementById('modal-load-btn');
+
+        const drawerPlayerBtn = document.getElementById('drawer-player-btn');
+        const drawerAiBtn = document.getElementById('drawer-ai-btn');
+        const drawerPlayer = document.getElementById('drawer-player');
+        const drawerAi = document.getElementById('drawer-ai');
+
+        const modeSelectBtns = document.querySelectorAll('.mode-select');
+        const aiSelectBtns = document.querySelectorAll('.ai-select');
+        const aiVsSelectBtns = document.querySelectorAll('.ai-vs-select');
+        const aiPanel = document.getElementById('ai-panel');
+        const aiVsAiPanel = document.getElementById('ai-vs-ai-panel');
+
+        const roomInput = document.getElementById('room-input');
+        const createRoomBtn = document.getElementById('create-room-btn');
+        const joinRoomBtn = document.getElementById('join-room-btn');
+        const leaveRoomBtn = document.getElementById('leave-room-btn');
+        const onlineStatus = document.getElementById('online-status');
+
+        const undoBtn = document.getElementById('undo-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const shareBtn = document.getElementById('share-btn');
+        const loadModalBtn = document.getElementById('load-modal-btn');
+
+        const getActivePlayer = () => state.xIsNext ? 'X' : 'O';
+        const isPlayerAI = (player) => (player === 'X' && state.gameMode === 'AIVAI') || (player === 'O' && (state.gameMode === 'PVAI' || state.gameMode === 'AIVAI'));
+        const isOnlineMode = () => state.gameMode === 'ONLINE';
+        const isLocalPlayersTurn = () => {
+            if (!isOnlineMode()) return true;
+            if (!state.online.role) return false;
+            return getActivePlayer() === state.online.role;
+        };
+
+        const checkWinner = (squares) => {
+            for (let i = 0; i < WINNING_LINES.length; i++) {
+                const [a, b, c] = WINNING_LINES[i];
+                if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+                    return squares[a];
+                }
+            }
+            return null;
+        };
+
+        const isBoardFull = (squares) => squares.every((square) => square !== null);
+
+        const getMacroBoard = (boards) => {
+            return boards.map(b => {
+                const w = checkWinner(b);
+                if (w) return w;
+                if (isBoardFull(b)) return 'D';
+                return null;
+            });
+        };
+
+        const saveStateToHistory = () => {
+            if (state.historyIndex < state.history.length - 1) {
+                state.history = state.history.slice(0, state.historyIndex + 1);
+            }
+            const saveState = {
+                boards: JSON.parse(JSON.stringify(state.boards)),
+                xIsNext: state.xIsNext,
+                nextBoard: state.nextBoard,
+                winner: state.winner,
+            };
+            state.history.push(saveState);
+            state.historyIndex = state.history.length - 1;
+        };
+
+        const loadStateFromHistory = (index) => {
+            if (index >= 0 && index < state.history.length) {
+                const loadedState = state.history[index];
+                state.boards = loadedState.boards;
+                state.xIsNext = loadedState.xIsNext;
+                state.nextBoard = loadedState.nextBoard;
+                state.winner = loadedState.winner;
+                state.historyIndex = index;
+                renderGame();
+                checkForAiTurn();
+            }
+        };
+
+        const saveGameToLocal = () => {
+            const code = encodeGameState(state.boards, state.xIsNext, state.nextBoard);
+            localStorage.setItem(LOCAL_STORAGE_KEY, code);
+        };
+
+        const loadGameFromLocal = () => {
+            const code = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (code) {
+                const decodedState = decodeGameState(code);
+                if (decodedState) {
+                    loadDecodedState(decodedState, true);
+                    showMessage('Game loaded from browser storage!');
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        const loadDecodedState = (decodedState, resetHistory = false) => {
+            state.boards = decodedState.boards;
+            state.xIsNext = decodedState.xIsNext;
+            state.nextBoard = decodedState.nextBoard;
+
+            const macroBoard = getMacroBoard(state.boards);
+            state.winner = checkWinner(macroBoard) || (isBoardFull(macroBoard) ? 'D' : null);
+
+            if (resetHistory) {
+                state.history = [];
+                state.historyIndex = 0;
+                saveStateToHistory();
+            }
+            renderGame();
+            checkForAiTurn();
+        };
+
+        const startTimer = () => {
+            clearInterval(state.timerInterval);
+            state.timer = 0;
+            state.timerInterval = setInterval(() => {
+                if (!state.winner && !state.isAiThinking) {
+                    state.timer++;
+                    renderStatusChip();
+                }
+            }, 1000);
+        };
+
+        const stopTimer = () => {
+            clearInterval(state.timerInterval);
+            state.timerInterval = null;
+        };
+
+        const encodeGameState = (boards, xIsNext, nextBoard) => {
+            let bitString = '';
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    const intVal = CHAR_TO_INT[boards[i][j]];
+                    bitString += intVal.toString(2).padStart(2, '0');
+                }
+            }
+            bitString += xIsNext ? '1' : '0';
+            const nextBoardInt = nextBoard === null ? 9 : nextBoard;
+            bitString += nextBoardInt.toString(2).padStart(4, '0');
+
+            while (bitString.length % 8 !== 0) { bitString += '0'; }
+
+            const bytes = new Uint8Array(bitString.length / 8);
+            for (let i = 0; i < bytes.length; i++) {
+                const byte = bitString.substring(i * 8, (i + 1) * 8);
+                bytes[i] = parseInt(byte, 2);
+            }
+
+            let base64 = btoa(String.fromCharCode.apply(null, bytes));
+            return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        };
+
+        const decodeGameState = (base64) => {
+            if (!base64) return null;
+            try {
+                let safeBase64 = base64.replace(/-/g, '+').replace(/_/g, '/');
+                while (safeBase64.length % 4) safeBase64 += '=';
+
+                const binaryString = atob(safeBase64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+
+                let bitString = '';
+                for (let i = 0; i < bytes.length; i++) bitString += bytes[i].toString(2).padStart(8, '0');
+
+                bitString = bitString.substring(0, 167);
+
+                let cursor = 0;
+                const decodedBoards = Array.from({ length: 9 }, () => Array(9).fill(null));
+
+                for (let i = 0; i < 9; i++) {
+                    for (let j = 0; j < 9; j++) {
+                        const bitVal = bitString.substring(cursor, cursor + 2);
+                        decodedBoards[i][j] = INT_TO_CHAR[parseInt(bitVal, 2)];
+                        cursor += 2;
+                    }
+                }
+
+                const decodedXIsNext = bitString[cursor] === '1';
+                cursor += 1;
+
+                const nextBoardBit = bitString.substring(cursor, cursor + 4);
+                const nextBoardInt = parseInt(nextBoardBit, 2);
+                const decodedNextBoard = nextBoardInt === 9 ? null : nextBoardInt;
+
+                return { boards: decodedBoards, xIsNext: decodedXIsNext, nextBoard: decodedNextBoard };
+            } catch (e) {
+                console.error("Failed to decode game state:", e);
+                return null;
+            }
+        };
+
+        const getValidMoves = (boards, nextBoard) => {
+            const macroBoard = getMacroBoard(boards);
+            const moves = [];
+            for (let m = 0; m < 9; m++) {
+                if (macroBoard[m] === null && (nextBoard === null || nextBoard === m)) {
+                    for (let i = 0; i < 9; i++) {
+                        if (boards[m][i] === null) moves.push({ macro: m, micro: i });
+                    }
+                }
+            }
+            return moves;
+        };
+
+        const scoreBoard = (board, player) => {
+            const opponent = player === 'X' ? 'O' : 'X';
+            let score = 0;
+            for (const line of WINNING_LINES) {
+                const pCount = line.filter(i => board[i] === player).length;
+                const oCount = line.filter(i => board[i] === opponent).length;
+                const emptyCount = line.filter(i => board[i] === null).length;
+                if (pCount === 3) return 1000;
+                if (oCount === 3) return -1000;
+                if (pCount === 2 && emptyCount === 1) score += 100;
+                if (oCount === 2 && emptyCount === 1) score -= 90;
+                if (pCount === 1 && emptyCount === 2) score += 10;
+            }
+            if (board[4] === player) score += 5;
+            return score;
+        };
+
+        const evaluateState = (boards, player) => {
+            const macroBoard = getMacroBoard(boards);
+            let score = 0;
+
+            const macroWinner = checkWinner(macroBoard);
+            if (macroWinner === player) return 10000;
+            if (macroWinner === (player === 'X' ? 'O' : 'X')) return -10000;
+
+            for (let i = 0; i < 9; i++) {
+                if (macroBoard[i] === null) score += scoreBoard(boards[i], player);
+                else if (macroBoard[i] === player) score += 500;
+                else if (macroBoard[i] !== 'D' && macroBoard[i] !== null) score -= 500;
+            }
+
+            if (state.nextBoard === null) score += 20;
+            return score;
+        };
+
+        const getBestMove = (boards, xIsNext, nextBoard) => {
+            const player = xIsNext ? 'X' : 'O';
+            const opponent = xIsNext ? 'O' : 'X';
+            const validMoves = getValidMoves(boards, nextBoard);
+            if (validMoves.length === 0) return null;
+
+            let bestScore = -Infinity;
+            let bestMove = validMoves[0];
+
+            for (const move of validMoves) {
+                const newBoards = JSON.parse(JSON.stringify(boards));
+                newBoards[move.macro][move.micro] = player;
+
+                const targetBoard = newBoards[move.micro];
+                const targetWinner = checkWinner(targetBoard);
+                const targetFull = isBoardFull(targetBoard);
+                const nextNextBoard = (targetWinner || targetFull) ? null : move.micro;
+
+                let score = evaluateState(newBoards, player);
+
+                if (!checkWinner(getMacroBoard(newBoards))) {
+                    const nextValidMoves = getValidMoves(newBoards, nextNextBoard);
+                    if (nextValidMoves.length > 0) {
+                        let opponentBestScore = Infinity;
+                        for (const nextMove of nextValidMoves) {
+                            const tempBoards = JSON.parse(JSON.stringify(newBoards));
+                            tempBoards[nextMove.macro][nextMove.micro] = opponent;
+                            const counterScore = evaluateState(tempBoards, player);
+                            opponentBestScore = Math.min(opponentBestScore, counterScore);
+                        }
+                        score = opponentBestScore;
+                    }
+                }
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = move;
+                }
+            }
+            return bestMove;
+        };
+
+        const getAiMoveByDifficulty = (boards, xIsNext, nextBoard) => {
+            const validMoves = getValidMoves(boards, nextBoard);
+            if (validMoves.length === 0) return null;
+
+            const difficulty = getDifficultyForPlayer(xIsNext ? 'X' : 'O');
+
+            if (difficulty === 'EASY') {
+                return validMoves[Math.floor(Math.random() * validMoves.length)];
+            }
+
+            if (difficulty === 'MEDIUM') {
+                if (Math.random() < 0.5) {
+                    return validMoves[Math.floor(Math.random() * validMoves.length)];
+                }
+                return getBestMove(boards, xIsNext, nextBoard);
+            }
+
+            if (difficulty === 'HARD') {
+                return getBestMove(boards, xIsNext, nextBoard);
+            }
+
+            return getGrandmasterMove(boards, xIsNext, nextBoard, state.aiTimeBudgetMs);
+        };
+
+        const getDifficultyForPlayer = (player) => {
+            if (state.gameMode === 'AIVAI') {
+                return player === 'X' ? state.aiDifficultyX : state.aiDifficultyO;
+            }
+            return state.aiDifficulty;
+        };
+
+        const getGrandmasterMove = (boards, xIsNext, nextBoard, timeBudgetMs) => {
+            const player = xIsNext ? 'X' : 'O';
+            const startTime = performance.now();
+
+            const timeExceeded = () => (performance.now() - startTime) >= timeBudgetMs;
+
+            const applyMove = (b, move, p) => {
+                const newBoards = JSON.parse(JSON.stringify(b));
+                newBoards[move.macro][move.micro] = p;
+                const targetBoard = newBoards[move.micro];
+                const targetWinner = checkWinner(targetBoard);
+                const targetFull = isBoardFull(targetBoard);
+                const nextNextBoard = (targetWinner || targetFull) ? null : move.micro;
+                return { newBoards, nextNextBoard };
+            };
+
+            const orderMoves = (b, moves, p, nb) => {
+                return moves.map(m => {
+                    const { newBoards } = applyMove(b, m, p);
+                    return { move: m, score: evaluateState(newBoards, p) };
+                }).sort((a, b) => b.score - a.score).map(x => x.move);
+            };
+
+            const negamax = (b, depth, alpha, beta, p, nb) => {
+                if (timeExceeded()) return { score: evaluateState(b, player), timedOut: true };
+                const macroBoard = getMacroBoard(b);
+                const winner = checkWinner(macroBoard);
+                if (winner || isBoardFull(macroBoard) || depth === 0) {
+                    const score = evaluateState(b, player);
+                    return { score, timedOut: false };
+                }
+
+                const moves = orderMoves(b, getValidMoves(b, nb), p, nb);
+                let bestScore = -Infinity;
+                for (const move of moves) {
+                    const { newBoards, nextNextBoard } = applyMove(b, move, p);
+                    const result = negamax(newBoards, depth - 1, -beta, -alpha, p === 'X' ? 'O' : 'X', nextNextBoard);
+                    if (result.timedOut) return result;
+                    const score = -result.score;
+                    bestScore = Math.max(bestScore, score);
+                    alpha = Math.max(alpha, score);
+                    if (alpha >= beta) break;
+                }
+                return { score: bestScore, timedOut: false };
+            };
+
+            let bestMove = null;
+            let depth = 1;
+            const validMoves = getValidMoves(boards, nextBoard);
+            if (validMoves.length === 0) return null;
+
+            while (!timeExceeded()) {
+                const orderedMoves = orderMoves(boards, validMoves, player, nextBoard);
+                let currentBest = orderedMoves[0];
+                let bestScore = -Infinity;
+
+                for (const move of orderedMoves) {
+                    const { newBoards, nextNextBoard } = applyMove(boards, move, player);
+                    const result = negamax(newBoards, depth - 1, -Infinity, Infinity, player === 'X' ? 'O' : 'X', nextNextBoard);
+                    if (result.timedOut) return bestMove || currentBest;
+                    const score = -result.score;
+                    if (score > bestScore) {
+                        bestScore = score;
+                        currentBest = move;
+                    }
+                }
+                bestMove = currentBest;
+                depth += 1;
+            }
+
+            return bestMove || validMoves[0];
+        };
+
+        const makeAiMove = (aiPlayer) => {
+            if (state.winner || state.isAiThinking || getActivePlayer() !== aiPlayer) return;
+            state.isAiThinking = true;
+            renderStatusChip();
+            stopTimer();
+
+            setTimeout(() => {
+                const move = getAiMoveByDifficulty(state.boards, state.xIsNext, state.nextBoard);
+                if (move) executeMove(move.macro, move.micro);
+                state.isAiThinking = false;
+                renderGame();
+                if (state.gameMode === 'AIVAI' && !state.winner) {
+                    setTimeout(() => checkForAiTurn(), AI_THINK_TIME);
+                }
+            }, AI_THINK_TIME);
+        };
+
+        const executeMove = (macroIndex, microIndex) => {
+            const newBoards = state.boards.map((board, i) =>
+                i === macroIndex
+                    ? board.map((sq, j) => j === microIndex ? getActivePlayer() : sq)
+                    : board
+            );
+
+            state.boards = newBoards;
+            state.xIsNext = !state.xIsNext;
+
+            const targetBoard = newBoards[microIndex];
+            const targetWinner = checkWinner(targetBoard);
+            const targetFull = isBoardFull(targetBoard);
+
+            if (targetWinner || targetFull) state.nextBoard = null;
+            else state.nextBoard = microIndex;
+
+            saveStateToHistory();
+            saveGameToLocal();
+        };
+
+        const checkForAiTurn = () => {
+            if (state.winner) {
+                stopTimer();
+                return;
+            }
+            const activePlayer = getActivePlayer();
+            if (isPlayerAI(activePlayer)) makeAiMove(activePlayer);
+            else startTimer();
+        };
+
+        const showMessage = (text) => {
+            messageBox.innerHTML = text;
+            messageBox.classList.remove('opacity-0', 'pointer-events-none');
+            messageBox.classList.add('opacity-100');
+            clearTimeout(window.messageTimeout);
+            window.messageTimeout = setTimeout(() => {
+                messageBox.classList.remove('opacity-100');
+                messageBox.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        };
+
+        const renderSmallSquare = (macroIndex, microIndex, value, isPlayable, activePlayer) => {
+            let baseClasses = "square relative w-full h-full flex items-center justify-center text-lg sm:text-2xl transition-all duration-200 select-none rounded-md ";
+
+            if (value === 'X') baseClasses += "bg-teal-900/40 text-teal-300 font-bold ";
+            else if (value === 'O') baseClasses += "bg-rose-900/40 text-rose-300 font-bold ";
+            else if (isPlayable) baseClasses += "playable bg-slate-900/60 hover:bg-slate-800/80 active:scale-95 ring-2 ring-amber-500/50 cursor-pointer ";
+            else baseClasses += "bg-slate-900/50 text-slate-600 cursor-not-allowed ";
+
+            const square = document.createElement('div');
+            square.className = baseClasses;
+            square.dataset.macro = macroIndex;
+            square.dataset.micro = microIndex;
+
+            if (value === 'X') square.innerHTML = getXIcon("w-3/4 h-3/4");
+            else if (value === 'O') square.innerHTML = getOIcon("w-3/4 h-3/4");
+
+            if (isPlayable) {
+                square.dataset.playerSymbol = activePlayer === 'X' ? '✕' : '◯';
+                square.addEventListener('click', () => handleSquareClick(macroIndex, microIndex));
+            }
+
+            return square;
+        };
+
+        const renderBigBoardSquare = (macroIndex, activePlayer) => {
+            const board = state.boards[macroIndex];
+            const macroBoard = getMacroBoard(state.boards);
+            const boardWinner = macroBoard[macroIndex];
+
+            let status = 'disabled';
+            if (state.winner || state.isAiThinking) status = 'disabled';
+            else if (boardWinner) status = `won-${boardWinner}`;
+            else if (state.nextBoard === null || state.nextBoard === macroIndex) status = 'active';
+
+            let containerClass = "relative aspect-square grid grid-cols-3 grid-rows-3 gap-1 p-2 rounded-xl transition-all duration-300 border-2 shadow-lg ";
+
+            if (status === 'active') containerClass += "border-amber-400 shadow-[0_0_18px_-3px_rgba(245,158,11,0.6)] bg-slate-900/70 ";
+            else if (boardWinner === 'X') containerClass += "border-teal-400 bg-teal-950/20 ";
+            else if (boardWinner === 'O') containerClass += "border-rose-400 bg-rose-950/20 ";
+            else if (boardWinner === 'D') containerClass += "border-slate-600 bg-slate-900/70 ";
+            else containerClass += "border-transparent bg-slate-900/60 opacity-70 ";
+
+            const container = document.createElement('div');
+            container.className = containerClass;
+
+            const isHumanPlayer = !isPlayerAI(activePlayer);
+            const canInteract = isHumanPlayer && (!isOnlineMode() || isLocalPlayersTurn());
+
+            for (let i = 0; i < 9; i++) {
+                const isPlayable = status === 'active' && board[i] === null && canInteract;
+                container.appendChild(renderSmallSquare(macroIndex, i, board[i], isPlayable, activePlayer));
+            }
+
+            if (boardWinner) {
+                const overlay = document.createElement('div');
+                overlay.className = "absolute inset-0 flex items-center justify-center bg-slate-950/80 backdrop-blur-[2px] rounded-xl z-10 animate-fade-in";
+
+                if (boardWinner === 'X') overlay.innerHTML = getXIcon("w-1/2 h-1/2 text-teal-300 drop-shadow-[0_0_10px_rgba(45,212,191,0.5)]");
+                else if (boardWinner === 'O') overlay.innerHTML = getOIcon("w-1/2 h-1/2 text-rose-300 drop-shadow-[0_0_10px_rgba(251,113,133,0.5)]");
+                else if (boardWinner === 'D') overlay.innerHTML = '<span class="text-5xl font-extrabold text-slate-500/70">D</span>';
+                container.appendChild(overlay);
+            }
+
+            return container;
+        };
+
+        const renderStatusChip = () => {
+            const activePlayer = getActivePlayer();
+            const playerXType = state.gameMode === 'AIVAI' ? 'AI' : 'Human';
+            const playerOType = state.gameMode === 'PVP' ? 'Human' : 'AI';
+            const timerFormatted = state.timer > 0 ? `${state.timer}s` : '';
+            const thinkingText = state.isAiThinking ? 'AI thinking...' : '';
+            const onlineTag = isOnlineMode() ? `Online ${state.online.role ? '(' + state.online.role + ')' : ''}` : '';
+            const aiTag = (state.gameMode === 'PVAI') ? `AI: ${state.aiDifficulty}` : '';
+            const aiVsTag = (state.gameMode === 'AIVAI') ? `AI X: ${state.aiDifficultyX} • AI O: ${state.aiDifficultyO}` : '';
+
+            statusChip.textContent = `X(${playerXType}) vs O(${playerOType}) • Turn: ${activePlayer} ${timerFormatted ? '• ' + timerFormatted : ''} ${thinkingText ? '• ' + thinkingText : ''} ${onlineTag ? '• ' + onlineTag : ''} ${aiTag ? '• ' + aiTag : ''} ${aiVsTag ? '• ' + aiVsTag : ''}`;
+
+            undoBtn.disabled = state.historyIndex <= 0 || state.isAiThinking || isOnlineMode();
+
+            modeSelectBtns.forEach(btn => {
+                if (btn.dataset.mode === state.gameMode) {
+                    btn.classList.add('ring-2', 'ring-amber-500', 'bg-amber-600/30', 'text-white');
+                    btn.classList.remove('bg-slate-800', 'text-slate-200');
+                } else {
+                    btn.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-600/30', 'text-white');
+                    btn.classList.add('bg-slate-800', 'text-slate-200');
+                }
+            });
+
+            aiSelectBtns.forEach(btn => {
+                if (btn.dataset.difficulty === state.aiDifficulty) {
+                    btn.classList.add('ring-2', 'ring-amber-500', 'bg-amber-600/30', 'text-white');
+                    btn.classList.remove('bg-slate-800', 'text-slate-200');
+                } else {
+                    btn.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-600/30', 'text-white');
+                    btn.classList.add('bg-slate-800', 'text-slate-200');
+                }
+            });
+
+            aiVsSelectBtns.forEach(btn => {
+                const player = btn.dataset.player;
+                const difficulty = btn.dataset.difficulty;
+                const active = player === 'X' ? state.aiDifficultyX : state.aiDifficultyO;
+                if (difficulty === active) {
+                    btn.classList.add('ring-2', 'ring-amber-500', 'bg-amber-600/30', 'text-white');
+                    btn.classList.remove('bg-slate-800', 'text-slate-200');
+                } else {
+                    btn.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-600/30', 'text-white');
+                    btn.classList.add('bg-slate-800', 'text-slate-200');
+                }
+            });
+        };
+
+        const dismissWinnerOverlay = () => { winnerOverlay.classList.add('hidden'); };
+
+        const renderWinnerOverlay = () => {
+            const winner = state.winner;
+            const overlay = winnerOverlay;
+            overlay.removeEventListener('click', dismissWinnerOverlay);
+
+            if (winner) {
+                stopTimer();
+                const color = winner === 'X' ? 'text-teal-300' : winner === 'O' ? 'text-rose-300' : 'text-slate-400';
+                const message = winner === 'D' ? "It's a Draw!" : `${winner} WINS!`;
+
+                overlay.innerHTML = `
+                    ${getTrophyIcon(`w-24 h-24 mb-4 ${color}`)}
+                    <h2 class="text-4xl md:text-5xl font-black text-white mb-2 drop-shadow-lg">${message}</h2>
+                    <button id="play-again-btn" class="mt-6 px-8 py-3 bg-white text-slate-950 font-bold rounded-full hover:scale-105 active:scale-95 transition-transform flex items-center gap-2 shadow-2xl">
+                        ${getRotateCcwIcon("w-5 h-5")}
+                        New Game
+                    </button>
+                    <p class="text-sm text-slate-400 mt-4 font-medium">Click or tap here to dismiss and view the final board.</p>
+                `;
+                overlay.classList.remove('hidden');
+
+                document.getElementById('play-again-btn').addEventListener('click', resetGame);
+                overlay.addEventListener('click', dismissWinnerOverlay);
+            } else {
+                overlay.classList.add('hidden');
+            }
+        };
+
+        const renderGame = () => {
+            const macroBoard = getMacroBoard(state.boards);
+            const gameWinner = checkWinner(macroBoard);
+
+            if (gameWinner || isBoardFull(macroBoard)) state.winner = gameWinner || (isBoardFull(macroBoard) ? 'D' : null);
+            else state.winner = null;
+
+            const code = encodeGameState(state.boards, state.xIsNext, state.nextBoard);
+            state.shareCode = code;
+            window.location.hash = code;
+
+            gameGrid.innerHTML = '';
+            const activePlayer = getActivePlayer();
+            for (let i = 0; i < 9; i++) gameGrid.appendChild(renderBigBoardSquare(i, activePlayer));
+
+            renderStatusChip();
+            renderWinnerOverlay();
+        };
+
+        const handleSquareClick = (macroIndex, microIndex) => {
+            if (state.winner || state.isAiThinking) return;
+            const activePlayer = getActivePlayer();
+            if (isPlayerAI(activePlayer)) return;
+            if (isOnlineMode() && !isLocalPlayersTurn()) return;
+
+            const isTargetBoard = state.nextBoard === null || state.nextBoard === macroIndex;
+            const macroBoard = getMacroBoard(state.boards);
+            const isSubBoardPlayable = macroBoard[macroIndex] === null;
+            const isSquareEmpty = state.boards[macroIndex][microIndex] === null;
+
+            if (!isTargetBoard || !isSubBoardPlayable || !isSquareEmpty) {
+                showMessage("Invalid move: You must play in the highlighted board!");
+                return;
+            }
+
+            executeMove(macroIndex, microIndex);
+            renderGame();
+            checkForAiTurn();
+
+            if (isOnlineMode()) {
+                sendOnlineState();
+            }
+        };
+
+        const handleUndo = () => {
+            if (state.historyIndex > 0) {
+                let targetIndex = state.historyIndex - 1;
+                if (state.gameMode !== 'PVP' && targetIndex > 0) {
+                    const prevState = state.history[targetIndex];
+                    const playerWhoMoved = prevState.xIsNext ? 'O' : 'X';
+                    if (isPlayerAI(playerWhoMoved)) targetIndex = Math.max(0, targetIndex - 1);
+                }
+                loadStateFromHistory(Math.max(0, targetIndex));
+                showMessage('Move undone.');
+            }
+        };
+
+        const resetGame = () => {
+            state.boards = JSON.parse(JSON.stringify(INITIAL_BOARDS_STATE));
+            state.xIsNext = true;
+            state.nextBoard = null;
+            state.winner = null;
+            state.history = [];
+            state.historyIndex = 0;
+            state.isAiThinking = false;
+            window.location.hash = '';
+
+            saveStateToHistory();
+            saveGameToLocal();
+            showMessage('Game reset!');
+            renderGame();
+            checkForAiTurn();
+
+            if (isOnlineMode()) sendOnlineState();
+        };
+
+        const handleModeChange = (newMode) => {
+            if (newMode !== state.gameMode) {
+                state.gameMode = newMode;
+                if (newMode === 'PVAI') {
+                    aiPanel.classList.remove('hidden');
+                    aiVsAiPanel.classList.add('hidden');
+                } else if (newMode === 'AIVAI') {
+                    aiPanel.classList.add('hidden');
+                    aiVsAiPanel.classList.remove('hidden');
+                } else {
+                    aiPanel.classList.add('hidden');
+                    aiVsAiPanel.classList.add('hidden');
+                }
+
+                resetGame();
+                showMessage(`Game Mode set to ${newMode}!`);
+            }
+        };
+
+        const handleDifficultyChange = (difficulty) => {
+            if (difficulty !== state.aiDifficulty) {
+                state.aiDifficulty = difficulty;
+                renderStatusChip();
+                showMessage(`AI Difficulty set to ${difficulty}!`);
+            }
+        };
+
+        const handleAiVsDifficultyChange = (player, difficulty) => {
+            if (player === 'X' && difficulty !== state.aiDifficultyX) {
+                state.aiDifficultyX = difficulty;
+            }
+            if (player === 'O' && difficulty !== state.aiDifficultyO) {
+                state.aiDifficultyO = difficulty;
+            }
+            renderStatusChip();
+            showMessage(`AI ${player} set to ${difficulty}!`);
+        };
+
+        const handleCopyShareCode = () => {
+            try {
+                const codeToCopy = window.location.hash.substring(1);
+                if (!codeToCopy) { showMessage('No game state to share (game is empty or reset).'); return; }
+
+                const textarea = document.createElement('textarea');
+                textarea.value = codeToCopy;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showMessage('Game code copied to clipboard! Share it with a friend.');
+            } catch (err) {
+                showMessage('Could not copy to clipboard. Copy the code from the URL hash manually.');
+                console.error('Failed to copy text: ', err);
+            }
+        };
+
+        const handleLoadGame = () => {
+            const inputCode = loadInput.value.trim();
+            const decodedState = decodeGameState(inputCode);
+            if (decodedState) {
+                loadDecodedState(decodedState, true);
+                loadModal.classList.add('hidden');
+                showMessage('Game successfully loaded!');
+            } else {
+                showMessage('Invalid game code. Please try again.');
+            }
+        };
+
+        const setOnlineStatus = (text) => { onlineStatus.textContent = text; };
+
+        const generateRoomCode = () => {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return code;
+        };
+
+        const ensureSocket = () => {
+            if (state.online.socket && (state.online.socket.readyState === WebSocket.OPEN || state.online.socket.readyState === WebSocket.CONNECTING)) return;
+
+            const socket = new WebSocket(WS_URL);
+            state.online.socket = socket;
+            setOnlineStatus('Connecting to server...');
+
+            socket.onopen = () => {
+                state.online.connected = true;
+                setOnlineStatus('Connected. Create or join a room.');
+            };
+
+            socket.onclose = () => {
+                state.online.connected = false;
+                state.online.room = null;
+                state.online.role = null;
+                leaveRoomBtn.classList.add('hidden');
+                setOnlineStatus('Disconnected from server.');
+            };
+
+            socket.onerror = () => {
+                setOnlineStatus('Connection error. Check your server URL.');
+            };
+
+            socket.onmessage = (event) => {
+                let msg;
+                try { msg = JSON.parse(event.data); } catch { return; }
+
+                if (msg.type === 'joined') {
+                    state.online.room = msg.room;
+                    state.online.role = msg.role;
+                    leaveRoomBtn.classList.remove('hidden');
+                    setOnlineStatus(`Joined room ${msg.room} as ${msg.role}`);
+                    if (state.gameMode !== 'ONLINE') {
+                        state.gameMode = 'ONLINE';
+                        aiPanel.classList.add('hidden');
+                        aiVsAiPanel.classList.add('hidden');
+                        resetGame();
+                        showMessage('Online mode enabled.');
+                    }
+                    renderGame();
+                }
+
+                if (msg.type === 'state') {
+                    state.online.syncing = true;
+                    loadDecodedState(msg.payload, true);
+                    state.online.syncing = false;
+                }
+
+                if (msg.type === 'info') showMessage(msg.message);
+            };
+        };
+
+        const sendOnline = (payload) => {
+            if (!state.online.socket || state.online.socket.readyState !== WebSocket.OPEN) return;
+            state.online.socket.send(JSON.stringify(payload));
+        };
+
+        const sendOnlineState = () => {
+            if (!isOnlineMode()) return;
+            if (!state.online.room) return;
+            if (state.online.syncing) return;
+            const payload = {
+                boards: state.boards,
+                xIsNext: state.xIsNext,
+                nextBoard: state.nextBoard
+            };
+            sendOnline({ type: 'state', room: state.online.room, payload });
+        };
+
+        const createRoom = () => {
+            let room = roomInput.value.trim();
+            if (!room) {
+                room = generateRoomCode();
+                roomInput.value = room;
+            }
+            ensureSocket();
+            if (!state.online.socket) return;
+            const wait = () => {
+                if (state.online.socket.readyState === WebSocket.OPEN) {
+                    sendOnline({ type: 'create', room });
+                } else setTimeout(wait, 100);
+            };
+            wait();
+        };
+
+        const joinRoom = () => {
+            const room = roomInput.value.trim();
+            if (!room) { showMessage('Enter a room code to join.'); return; }
+            ensureSocket();
+            if (!state.online.socket) return;
+            const wait = () => {
+                if (state.online.socket.readyState === WebSocket.OPEN) {
+                    sendOnline({ type: 'join', room });
+                } else setTimeout(wait, 100);
+            };
+            wait();
+        };
+
+        const leaveRoom = () => {
+            if (state.online.room) sendOnline({ type: 'leave', room: state.online.room });
+            state.online.room = null;
+            state.online.role = null;
+            leaveRoomBtn.classList.add('hidden');
+            setOnlineStatus('Left room.');
+            renderStatusChip();
+        };
+
+        const toggleDrawer = (drawer) => {
+            [drawerPlayer, drawerAi].forEach(d => {
+                if (d !== drawer) d.classList.add('hidden');
+            });
+            drawer.classList.toggle('hidden');
+        };
+
+        const getXIcon = (className) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="${className}"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>`;
+        const getOIcon = (className) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="${className}"><circle cx="12" cy="12" r="10" /></svg>`;
+        const getTrophyIcon = (className) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${className}"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>`;
+        const getRotateCcwIcon = (className) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${className}"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>`;
+
+        window.onload = function() {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                const decodedState = decodeGameState(hash);
+                if (decodedState) {
+                    loadDecodedState(decodedState, true);
+                    showMessage('Game loaded from URL!');
+                }
+            } else {
+                loadGameFromLocal();
+            }
+
+            if (state.history.length === 0) saveStateToHistory();
+
+            resetBtn.addEventListener('click', resetGame);
+            shareBtn.addEventListener('click', handleCopyShareCode);
+            undoBtn.addEventListener('click', handleUndo);
+
+            loadModalBtn.addEventListener('click', () => {
+                loadModal.classList.remove('hidden');
+                loadInput.value = '';
+                modalLoadBtn.disabled = true;
+            });
+            document.getElementById('modal-cancel-btn').addEventListener('click', () => {
+                loadModal.classList.add('hidden');
+            });
+            modalLoadBtn.addEventListener('click', handleLoadGame);
+
+            loadInput.addEventListener('input', () => {
+                modalLoadBtn.disabled = loadInput.value.trim().length === 0;
+            });
+
+            modeSelectBtns.forEach(btn => {
+                btn.addEventListener('click', () => handleModeChange(btn.dataset.mode));
+            });
+
+            aiSelectBtns.forEach(btn => {
+                btn.addEventListener('click', () => handleDifficultyChange(btn.dataset.difficulty));
+            });
+
+            aiVsSelectBtns.forEach(btn => {
+                btn.addEventListener('click', () => handleAiVsDifficultyChange(btn.dataset.player, btn.dataset.difficulty));
+            });
+
+            createRoomBtn.addEventListener('click', createRoom);
+            joinRoomBtn.addEventListener('click', joinRoom);
+            leaveRoomBtn.addEventListener('click', leaveRoom);
+
+            drawerPlayerBtn.addEventListener('click', () => toggleDrawer(drawerPlayer));
+            drawerAiBtn.addEventListener('click', () => toggleDrawer(drawerAi));
+
+            renderGame();
+            checkForAiTurn();
+        };
+    </script>
+</body>
+</html>
