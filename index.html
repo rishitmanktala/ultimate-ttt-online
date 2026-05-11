@@ -7,7 +7,6 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <style>
 /* ─── DESIGN TOKENS ─────────────────────────────────────── */
 :root{
@@ -609,7 +608,7 @@ const LS_NAMES  = 'utttt_names';
 const LS_THEME  = 'utttt_theme';
 const REPLAY_PFX = 'r:';
 const AIVAI_DELAY = 600;
-const SOCKET_URL  = 'https://ultimate-ttt-1.onrender.com';
+const SOCKET_URL  = 'wss://ultimate-ttt-1.onrender.com';
 /* AI weight constants — no more magic numbers */
 const W = {
   MACRO_WIN:           10_000,
@@ -1796,76 +1795,86 @@ const setOnlineStatus=(msg,type='')=>{
   el.style.color=type==='ok'?'#6ee7b7':type==='err'?'#fda4af':type==='warn'?'#fcd34d':'';
 };
 
+const sendSocket = (data) => {
+  if (!net.socket || net.socket.readyState !== WebSocket.OPEN) return;
+  net.socket.send(JSON.stringify(data));
+};
+
 const ensureSocket=()=>{
   if(net.socket&&net.connected) return;
-  if(!window.io){ setOnlineStatus('Socket.IO unavailable.','err'); return; }
-  const sock=io(SOCKET_URL,{transports:['websocket','polling'],reconnection:true});
+  const sock=new WebSocket(SOCKET_URL);
   net.socket=sock;
   setOnlineStatus('Connecting…');
   document.getElementById('online-reconnect')?.classList.add('hidden');
 
-  sock.on('connect',()=>{
+  sock.onopen = () => {
     net.connected=true;
     setOnlineStatus('Connected. Create or join a room.','ok');
     document.getElementById('online-reconnect')?.classList.add('hidden');
-    if(net.lastRoom&&!net.room) sock.emit('join_room',{room:net.lastRoom});
-    // start ping
+    if(net.lastRoom&&!net.room) sendSocket({type:'join', room:net.lastRoom});
     startPing();
-  });
-  sock.on('disconnect',()=>{
+  };
+
+  sock.onclose = () => {
     net.connected=false; net.room=null; net.role=null;
     document.getElementById('leave-room-btn')?.classList.add('hidden');
     setOnlineStatus('Disconnected.','err');
     document.getElementById('ping-display')?.classList.add('hidden');
-  });
-  sock.on('connect_error',()=>setOnlineStatus('Connection error.','err'));
-  sock.on('reconnect_attempt',()=>document.getElementById('online-reconnect')?.classList.remove('hidden'));
-  sock.on('reconnect',()=>{
-    document.getElementById('online-reconnect')?.classList.add('hidden');
-    if(net.lastRoom) sock.emit('join_room',{room:net.lastRoom});
-  });
-  sock.on('joined',(msg)=>{
-    net.room=msg.room; net.role=msg.role;
-    document.getElementById('leave-room-btn')?.classList.remove('hidden');
-    setOnlineStatus(`Room ${msg.room} · you are ${msg.role}`,'ok');
-    if(ui.gameMode!=='ONLINE'){ ui.gameMode='ONLINE'; resetGame(); showToast('Online mode enabled.','info'); }
-    renderGame();
-  });
-  sock.on('state',(payload)=>{
-    net.syncing=true;
-    gs.boards=payload.boards; gs.xIsNext=payload.xIsNext;
-    gs.nextBoard=payload.nextBoard; gs.moves=payload.moves||[];
-    net.syncing=false;
-    buildGrid(); renderGame();
-  });
-  // FIX: disconnect handling
-  sock.on('player_left',()=>{ showToast('Opponent disconnected! You can continue vs AI or wait.','error'); });
-  // FIX: room full
-  sock.on('room_full',()=>{ showToast('Room is full (max 2 players).','error'); });
-  sock.on('info',(msg)=>showToast(msg,'info'));
-  // ping
-  sock.on('pong_custom',(t)=>{
-    net.latency=Math.round(performance.now()-t);
-    const pd=document.getElementById('ping-display');
-    const pv=document.getElementById('ping-val');
-    if(pd) pd.classList.remove('hidden');
-    if(pv) pv.textContent=net.latency;
-    renderStatusBar();
-  });
+    // Simple reconnect
+    setTimeout(() => {
+      if (!net.connected) ensureSocket();
+    }, 5000);
+  };
+
+  sock.onerror = () => setOnlineStatus('Connection error.','err');
+
+  sock.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'joined') {
+        net.room=msg.room; net.role=msg.role;
+        document.getElementById('leave-room-btn')?.classList.remove('hidden');
+        setOnlineStatus(`Room ${msg.room} (Playing ${msg.role})`,'ok');
+        ui.gameMode='PVONLINE';
+        resetGame();
+        renderGame();
+      } else if (msg.type === 'state') {
+        net.syncing=true;
+        gs.boards=msg.payload.boards; gs.xIsNext=msg.payload.xIsNext;
+        gs.nextBoard=msg.payload.nextBoard; gs.winner=msg.payload.winner;
+        gs.moves=msg.payload.moves||0;
+        saveSnap(); buildGrid(); renderGame(); renderStatusBar();
+        net.syncing=false;
+      } else if (msg.type === 'info') {
+        if (msg.message === 'Other player left the room.') {
+          showToast('Opponent disconnected! You can continue vs AI or wait.','error');
+        } else if (msg.message === 'Room is full (2 players max).') {
+          showToast('Room is full (max 2 players).','error');
+        } else {
+          showToast(msg.message, 'info');
+        }
+      } else if (msg.type === 'pong_custom') {
+        net.latency=Math.round(performance.now()-msg.t);
+        const pd=document.getElementById('ping-display');
+        pd.classList.remove('hidden');
+        document.getElementById('ping-val').textContent=net.latency;
+      }
+    } catch(e) {}
+  };
 };
 
 const startPing=()=>{
   setInterval(()=>{
     if(net.socket&&net.connected) {
       net.pingStart=performance.now();
-      net.socket.emit('ping_custom',performance.now());
+      sendSocket({type:'ping_custom', t: performance.now()});
     }
   },5000);
 };
 
 const sendNetState=()=>{
   if(!isOnline()||!net.room||!net.socket||!net.connected||net.syncing) return;
-  net.socket.emit('state_update',{room:net.room,payload:{
+  sendSocket({type:'state', room:net.room, payload:{
     boards:gs.boards, xIsNext:gs.xIsNext, nextBoard:gs.nextBoard, moves:gs.moves
   }});
 };
@@ -2188,17 +2197,17 @@ window.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('room-input').value=room;
     try{ localStorage.setItem(LS_ROOM,room); } catch(_){}
     net.lastRoom=room; ensureSocket();
-    net.socket?.emit('create_room',{room});
+    sendSocket({type:'create', room});
   });
   document.getElementById('join-room-btn')?.addEventListener('click',()=>{
     const room=document.getElementById('room-input').value.trim();
     if(!room){ showToast('Enter a room code first.','error'); return; }
     try{ localStorage.setItem(LS_ROOM,room); } catch(_){}
     net.lastRoom=room; ensureSocket();
-    net.socket?.emit('join_room',{room});
+    sendSocket({type:'join', room});
   });
   document.getElementById('leave-room-btn')?.addEventListener('click',()=>{
-    if(net.socket&&net.room) net.socket.emit('leave_room',{room:net.room});
+    if(net.socket&&net.room) sendSocket({type:'leave'});
     net.room=null; net.role=null; net.lastRoom=null;
     try{ localStorage.removeItem(LS_ROOM); } catch(_){}
     document.getElementById('leave-room-btn')?.classList.add('hidden');
@@ -2209,7 +2218,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('wake-btn')?.addEventListener('click',()=>{
     setOnlineStatus('Waking server… (may take 30s)','warn');
     showToast('Waking server, please wait ~30 seconds…','info');
-    fetch(SOCKET_URL,{mode:'no-cors'}).catch(()=>{});
+    fetch('https://ultimate-ttt-1.onrender.com',{mode:'no-cors'}).catch(()=>{});
   });
 
   /* Replay controls */
