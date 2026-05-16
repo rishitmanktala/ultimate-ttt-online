@@ -11,11 +11,19 @@
 <style>
 /* ─── DESIGN TOKENS ─────────────────────────────────────── */
 :root{
-  --bg-1:#0b0d12;--bg-2:#0f172a;
-  --panel:rgba(17,24,39,0.72);--panel-strong:rgba(17,24,39,0.93);
-  --accent:#2dd4bf;--accent2:#f59e0b;
-  --text:#e5e7eb;--muted:#94a3b8;
-  --x-color:#2dd4bf;--o-color:#fb7185;
+  /* ── Backgrounds ── */
+  --bg-1:#0f1622;--bg-2:#14202e;
+  /* ── Panels ── */
+  --panel:rgba(16,28,46,0.80);--panel-strong:rgba(20,34,56,0.93);
+  /* ── Accent palette ── */
+  --accent:#7ab8d4;--accent2:#c9a84c;
+  /* ── Typography ── */
+  --text:#dce8f2;--muted:#6a8499;
+  /* ── Player colours ── */
+  --x-color:#7ab8d4;--o-color:#d4826a;
+  --x-hover:rgba(122,184,212,0.16);--o-hover:rgba(212,130,106,0.16);
+  /* ── Win highlight ── */
+  --win-color:#b85c48;
   --radius:1rem;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -25,9 +33,10 @@ body{
   font-family:'Space Grotesk',sans-serif;
   min-height:100vh;
   background:
-    radial-gradient(900px 700px at 10% -10%,rgba(45,212,191,.15),transparent 55%),
-    radial-gradient(900px 700px at 110% 0%,rgba(245,158,11,.12),transparent 55%),
-    linear-gradient(180deg,var(--bg-1),var(--bg-2));
+    radial-gradient(900px 700px at 8% 0%,rgba(122,184,212,.07),transparent 55%),
+    radial-gradient(700px 600px at 92% 5%,rgba(212,130,106,.06),transparent 50%),
+    radial-gradient(500px 400px at 50% 105%,rgba(201,168,76,.05),transparent 60%),
+    linear-gradient(160deg,var(--bg-1) 0%,var(--bg-2) 100%);
   color:var(--text);overflow-x:hidden;
   cursor:none;
 }
@@ -40,17 +49,18 @@ body{
           transform:translate(-50%,-50%);transition:all .14s ease;opacity:.55;}
 
 /* ─── GLASS PANELS ───────────────────────────────────────── */
-.panel{background:var(--panel);border:1px solid rgba(148,163,184,.16);backdrop-filter:blur(14px)}
-.panel-strong{background:var(--panel-strong);border:1px solid rgba(148,163,184,.22);backdrop-filter:blur(14px)}
-.chip{border:1px solid rgba(148,163,184,.22);background:rgba(15,23,42,.65)}
-.drawer{border:1px solid rgba(148,163,184,.15);background:rgba(15,23,42,.72)}
+.panel{background:var(--panel);border:1px solid rgba(122,184,212,.10);backdrop-filter:blur(16px);box-shadow:0 4px 28px rgba(0,0,0,.30)}
+.panel-strong{background:var(--panel-strong);border:1px solid rgba(122,184,212,.14);backdrop-filter:blur(18px);box-shadow:0 8px 40px rgba(0,0,0,.40),inset 0 1px 0 rgba(255,255,255,.05)}
+.chip{border:1px solid rgba(122,184,212,.12);background:rgba(20,36,58,.80)}
+.drawer{animation:fadeUp .2s ease-out}
+.tab-active{background:rgba(122,184,212,.14)!important;color:var(--x-color)!important;box-shadow:0 1px 3px rgba(0,0,0,.25);border-radius:0.5rem;}
 
 /* ─── BOARD ANIMATIONS ───────────────────────────────────── */
 @keyframes fade-in{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
 @keyframes active-pulse{
-  0%{box-shadow:0 0 18px rgba(245,158,11,.45);}
-  50%{box-shadow:0 0 34px rgba(245,158,11,.7);}
-  100%{box-shadow:0 0 18px rgba(245,158,11,.45);}
+  0%{box-shadow:0 0 20px rgba(201,168,76,.50),0 0 40px rgba(201,168,76,.18);}
+  50%{box-shadow:0 0 36px rgba(201,168,76,.80),0 0 64px rgba(201,168,76,.30);}
+  100%{box-shadow:0 0 20px rgba(201,168,76,.50),0 0 40px rgba(201,168,76,.18);}
 }
 @keyframes thud{
   0%{transform:translate(0,0)}20%{transform:translate(-3px,3px)}
@@ -71,34 +81,36 @@ body{
 
 /* ─── MACRO BOARD STATES ─────────────────────────────────── */
 .macro-active{
-  box-shadow:0 0 26px rgba(245,158,11,.55),inset 0 0 14px rgba(245,158,11,.2);
+  box-shadow:0 0 28px rgba(201,168,76,.55),inset 0 0 16px rgba(201,168,76,.20);
   animation:active-pulse 1.8s ease-in-out infinite;
+  border-color:rgba(201,168,76,.40)!important;
 }
-.macro-dim{opacity:.32;filter:grayscale(.25) blur(.3px);pointer-events:none}
+.macro-dim{opacity:.30;filter:grayscale(.4) blur(.4px);pointer-events:none}
 
 /* ─── CELL STATES ────────────────────────────────────────── */
 .square{position:relative;width:100%;height:100%;
   display:flex;align-items:center;justify-content:center;
-  border-radius:.5rem;transition:background .15s,transform .1s;
+  border-radius:.5rem;transition:background .15s,transform .1s,box-shadow .15s;
   outline:none;
 }
-.square.playable{cursor:pointer;background:rgba(30,41,59,.6);}
-.square.playable:hover{background:rgba(51,65,85,.8);transform:scale(1.04);}
+.square.playable{cursor:pointer;background:rgba(122,184,212,.04);border:1px solid rgba(122,184,212,.08);}
+body[data-x-is-next="true"] .square.playable:hover{background:var(--x-hover);transform:scale(1.05);box-shadow:0 2px 14px rgba(122,184,212,.22);}
+body[data-x-is-next="false"] .square.playable:hover{background:var(--o-hover);transform:scale(1.05);box-shadow:0 2px 14px rgba(212,130,106,.22);}
 .square.playable:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
-.square.playable:active{transform:scale(.96)}
-.square.placed-x{background:rgba(45,212,191,.12)}
-.square.placed-o{background:rgba(251,113,133,.12)}
-.square.disabled-sq{background:rgba(15,23,42,.45);cursor:not-allowed}
+.square.playable:active{transform:scale(.95)}
+.square.placed-x{background:rgba(122,184,212,.16);border:1px solid rgba(122,184,212,.30)}
+.square.placed-o{background:rgba(212,130,106,.15);border:1px solid rgba(212,130,106,.28)}
+.square.disabled-sq{background:rgba(255,255,255,.03);cursor:not-allowed}
 .square.ai-consider{
-  box-shadow:0 0 14px rgba(45,212,191,.75);
-  outline:1px solid rgba(45,212,191,.85);
+  box-shadow:0 0 16px rgba(122,184,212,.60);
+  outline:1px solid rgba(122,184,212,.80);
   animation:consider-pulse .55s ease-in-out infinite;
 }
 /* ghost preview on hover */
 .square.playable[data-ghost]::after{
   content:attr(data-ghost);
   position:absolute;font-size:1.4rem;font-weight:700;
-  opacity:.22;pointer-events:none;color:var(--accent2);
+  opacity:.25;pointer-events:none;color:var(--accent2);
 }
 
 /* ─── VIGNETTE FLASH ─────────────────────────────────────── */
@@ -127,23 +139,24 @@ body{
   display:flex;flex-direction:column;gap:.5rem;pointer-events:none;
 }
 .toast-item{
-  background:rgba(17,24,39,.95);border:1px solid rgba(148,163,184,.2);
-  backdrop-filter:blur(12px);border-radius:.75rem;
+  background:rgba(20,34,56,.96);border:1px solid rgba(122,184,212,.14);
+  backdrop-filter:blur(16px);border-radius:.75rem;
   padding:.6rem 1rem;font-size:.8rem;color:var(--text);
-  box-shadow:0 8px 32px rgba(0,0,0,.4);
+  box-shadow:0 8px 32px rgba(0,0,0,.40);
   animation:fadeUp .25s ease-out;pointer-events:auto;
   max-width:280px;word-break:break-word;
 }
-.toast-item.success{border-color:rgba(45,212,191,.4)}
-.toast-item.error{border-color:rgba(251,113,133,.4)}
-.toast-item.info{border-color:rgba(245,158,11,.4)}
+.toast-item.success{border-color:rgba(122,184,212,.45);background:rgba(16,30,50,.97)}
+.toast-item.error{border-color:rgba(212,130,106,.45);background:rgba(30,16,16,.97)}
+.toast-item.info{border-color:rgba(201,168,76,.45);background:rgba(28,24,14,.97)}
 
 /* ─── STATUS CHIP ────────────────────────────────────────── */
 #status-bar{
   display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;
-  padding:.6rem 1rem;border-radius:9999px;
-  background:rgba(15,23,42,.7);border:1px solid rgba(148,163,184,.18);
-  backdrop-filter:blur(10px);font-size:.78rem;
+  padding:.6rem 1.25rem;border-radius:9999px;
+  background:rgba(20,34,56,.88);border:1px solid rgba(122,184,212,.14);
+  backdrop-filter:blur(12px);font-size:.78rem;
+  box-shadow:0 2px 14px rgba(0,0,0,.35);
 }
 .status-player{font-weight:700;letter-spacing:.03em}
 .status-x{color:var(--x-color)}
@@ -159,8 +172,8 @@ body{
   display:inline-flex;align-items:center;gap:.35rem;
   padding:.25rem .7rem;border-radius:9999px;font-size:.75rem;font-weight:600;
 }
-.name-badge-x{background:rgba(45,212,191,.12);border:1px solid rgba(45,212,191,.3);color:var(--x-color)}
-.name-badge-o{background:rgba(251,113,133,.12);border:1px solid rgba(251,113,133,.3);color:var(--o-color)}
+.name-badge-x{background:rgba(122,184,212,.14);border:1px solid rgba(122,184,212,.34);color:var(--x-color)}
+.name-badge-o{background:rgba(212,130,106,.13);border:1px solid rgba(212,130,106,.32);color:var(--o-color)}
 
 /* ─── BUTTONS ────────────────────────────────────────────── */
 .btn{
@@ -169,33 +182,34 @@ body{
   cursor:pointer;transition:all .18s;border:none;outline:none;
 }
 .btn:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
-.btn-slate{background:rgba(30,41,59,.8);color:var(--text)}
-.btn-slate:hover{background:rgba(51,65,85,.9)}
-.btn-amber{background:rgba(120,80,10,.45);color:#fcd34d}
-.btn-amber:hover{background:rgba(120,80,10,.65)}
-.btn-teal{background:rgba(20,80,70,.5);color:#5eead4}
-.btn-teal:hover{background:rgba(20,80,70,.75)}
-.btn-rose{background:rgba(100,20,30,.5);color:#fda4af}
-.btn-rose:hover{background:rgba(100,20,30,.75)}
-.btn-emerald{background:rgba(15,60,40,.5);color:#6ee7b7}
-.btn-emerald:hover{background:rgba(15,60,40,.75)}
-.btn-cyan{background:rgba(15,60,80,.5);color:#67e8f9}
-.btn-cyan:hover{background:rgba(15,60,80,.75)}
-.btn-primary{background:var(--accent2);color:#0f172a;font-weight:700}
-.btn-primary:hover{background:#fbbf24;transform:translateY(-1px)}
-.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+.btn-slate{background:rgba(255,255,255,.06);color:var(--text);border:1px solid rgba(255,255,255,.09)}
+.btn-slate:hover{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.15)}
+.btn-amber{background:rgba(201,168,76,.14);color:#c9a84c;border:1px solid rgba(201,168,76,.26)}
+.btn-amber:hover{background:rgba(201,168,76,.22)}
+.btn-teal{background:rgba(122,184,212,.13);color:#7ab8d4;border:1px solid rgba(122,184,212,.26)}
+.btn-teal:hover{background:rgba(122,184,212,.20)}
+.btn-rose{background:rgba(184,92,72,.13);color:#d4826a;border:1px solid rgba(184,92,72,.26)}
+.btn-rose:hover{background:rgba(184,92,72,.20)}
+.btn-emerald{background:rgba(122,184,212,.13);color:#7ab8d4;border:1px solid rgba(122,184,212,.26)}
+.btn-emerald:hover{background:rgba(122,184,212,.20)}
+.btn-cyan{background:rgba(212,130,106,.13);color:#d4826a;border:1px solid rgba(212,130,106,.26)}
+.btn-cyan:hover{background:rgba(212,130,106,.20)}
+.btn-primary{background:linear-gradient(135deg,#c9a84c,#a8862e);color:#0f1622;font-weight:700;box-shadow:0 2px 10px rgba(201,168,76,.30)}
+.btn-primary:hover{background:linear-gradient(135deg,#dbb85a,#c9a84c);transform:translateY(-1px);box-shadow:0 4px 18px rgba(201,168,76,.40)}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
 
 /* mode/difficulty active state */
 .mode-active{
-  background:rgba(245,158,11,.18)!important;
-  border:1px solid rgba(245,158,11,.5)!important;
-  color:#fff!important;
+  background:rgba(201,168,76,.18)!important;
+  border:1px solid rgba(201,168,76,.50)!important;
+  color:#c9a84c!important;
+  box-shadow:inset 0 1px 0 rgba(255,220,100,.08);
 }
 
 /* ─── SCROLLBARS ─────────────────────────────────────────── */
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(148,163,184,.25);border-radius:2px}
+::-webkit-scrollbar-thumb{background:rgba(122,184,212,.20);border-radius:2px}
 
 /* ─── RESPONSIVE ─────────────────────────────────────────── */
 @media(max-width:640px){
@@ -205,13 +219,14 @@ body{
 .mobile-sidebar-toggle{display:none}
 
 /* ─── PROGRESS BAR ───────────────────────────────────────── */
-.progress-bar{height:4px;background:rgba(148,163,184,.15);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;background:var(--accent2);border-radius:2px;
+.progress-bar{height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--x-color),var(--accent2));border-radius:3px;
                transition:width .1s linear;width:0%}
 
 /* ─── MODAL BACKDROP ─────────────────────────────────────── */
 .modal-backdrop{
-  position:fixed;inset:0;background:rgba(0,0,0,.72);
+  position:fixed;inset:0;background:rgba(5,10,20,.70);
+  backdrop-filter:blur(8px);
   z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;
 }
 
@@ -219,8 +234,9 @@ body{
 #winner-overlay{
   position:absolute;inset:0;z-index:50;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(2,6,23,.88);backdrop-filter:blur(10px);
+  background:rgba(12,20,34,.94);backdrop-filter:blur(14px);
   border-radius:1.25rem;
+  box-shadow:inset 0 1px 0 rgba(122,184,212,.10);
 }
 #winner-overlay.hidden{display:none}
 
@@ -230,16 +246,49 @@ body{
   padding:1px 4px;border-radius:3px;pointer-events:none;z-index:10;
   opacity:.8;letter-spacing:.03em;
 }
-.badge-best{background:rgba(45,212,191,.25);color:#5eead4}
-.badge-ok{background:rgba(245,158,11,.25);color:#fde68a}
-.badge-miss{background:rgba(251,113,133,.25);color:#fecdd3}
+.badge-best{background:rgba(122,184,212,.22);color:#7ab8d4}
+.badge-ok{background:rgba(201,168,76,.22);color:#c9a84c}
+.badge-miss{background:rgba(212,130,106,.22);color:#d4826a}
 
 /* ─── KEYBOARD SHORTCUT HINT ─────────────────────────────── */
 .kbd{
   display:inline-block;padding:1px 5px;border-radius:3px;font-size:.68rem;
-  background:rgba(148,163,184,.12);border:1px solid rgba(148,163,184,.2);
-  color:var(--muted);font-family:monospace;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  color:var(--text);font-family:monospace;
 }
+
+/* ─── DARK-THEME: Tailwind class overrides ───────────────── */
+/* stone-* → dark equivalents */
+.text-stone-400{color:#4a6070!important}
+.text-stone-500{color:var(--muted)!important}
+.text-stone-600{color:#7a9ab0!important}
+.text-stone-700{color:#96b8d0!important}
+.text-stone-900{color:var(--text)!important}
+.bg-stone-200\/50,.bg-stone-200\/70{background:rgba(20,36,58,.60)!important}
+.bg-stone-300{background:rgba(28,48,72,.65)!important}
+.border-stone-300,.border-stone-300\/50{border-color:rgba(122,184,212,.18)!important}
+.placeholder-stone-400::placeholder{color:#4a6070!important}
+/* Hardcoded player hex colors in HTML → new values */
+.text-\[\#2D6A4F\],.text-\[\#1a6b52\]{color:var(--x-color)!important}
+.text-\[\#6B2737\],.text-\[\#922b21\]{color:var(--o-color)!important}
+.text-\[\#C78D1E\],.text-\[\#d4921a\]{color:var(--accent2)!important}
+.text-\[\#B44D3E\],.text-\[\#c0392b\]{color:var(--o-color)!important}
+.border-\[\#2D6A4F\]\/30,.border-\[\#1a6b52\]\/30{border-color:rgba(122,184,212,.30)!important}
+.border-\[\#6B2737\]\/30,.border-\[\#922b21\]\/30{border-color:rgba(212,130,106,.30)!important}
+.bg-\[\#2D6A4F\]\/10,.bg-\[\#1a6b52\]\/10{background:rgba(122,184,212,.12)!important}
+.bg-\[\#6B2737\]\/10,.bg-\[\#922b21\]\/10{background:rgba(212,130,106,.12)!important}
+/* Input fields */
+input[type="text"]{
+  background:rgba(16,28,46,.75)!important;
+  color:var(--text)!important;
+}
+/* Toggle switch */
+.bg-stone-300{background:rgba(255,255,255,.15)!important}
+/* Tailwind peer-checked on audio toggle */
+.peer:checked~div[class*="peer-checked:bg-"]{
+  background-color:#c9a84c!important;
+}
+
 </style>
 </head>
 <body>
@@ -250,12 +299,12 @@ body{
 <svg width="0" height="0" style="position:absolute">
   <filter id="glow-x" x="-50%" y="-50%" width="200%" height="200%">
     <feGaussianBlur stdDeviation="2.5" result="blur"/>
-    <feColorMatrix type="matrix" values="0 0 0 0 .17 0 0 0 0 .85 0 0 0 0 .75 0 0 0 1 0"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 .18 0 0 0 0 .42 0 0 0 0 .31 0 0 0 1 0"/>
     <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
   </filter>
   <filter id="glow-o" x="-50%" y="-50%" width="200%" height="200%">
     <feGaussianBlur stdDeviation="2.5" result="blur"/>
-    <feColorMatrix type="matrix" values="0 0 0 0 .98 0 0 0 0 .45 0 0 0 0 .55 0 0 0 1 0"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 .71 0 0 0 0 .30 0 0 0 0 .24 0 0 0 1 0"/>
     <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
   </filter>
 </svg>
@@ -277,10 +326,10 @@ body{
 <div id="load-modal" class="modal-backdrop" style="display:none" role="dialog" aria-modal="true" aria-label="Load Game">
   <div class="panel-strong rounded-xl p-7 max-w-sm w-full shadow-2xl animate-pop-in">
     <h3 class="text-lg font-bold mb-1">Load Game</h3>
-    <p class="text-xs text-slate-400 mb-4">Paste a share code to restore a specific position.</p>
+    <p class="text-xs text-stone-600 mb-4">Paste a share code to restore a specific position.</p>
     <input id="load-input" type="text" placeholder="Paste code here…"
-      class="w-full p-2.5 mb-4 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500
-             focus:ring-2 focus:ring-amber-400 outline-none text-sm"
+      class="w-full p-2.5 mb-4 bg-stone-200/50 border border-stone-300 rounded-lg text-stone-900 placeholder-stone-400
+             focus:ring-2 focus:ring-[#C78D1E] outline-none text-sm"
       aria-label="Game code input"/>
     <div class="flex justify-end gap-2">
       <button id="modal-cancel" class="btn btn-slate">Cancel</button>
@@ -297,16 +346,16 @@ body{
     <h3 class="text-lg font-bold mb-4">Player Names</h3>
     <div class="flex flex-col gap-3 mb-5">
       <div>
-        <label class="text-xs text-teal-300 font-semibold mb-1 block">Player X</label>
+        <label class="text-xs text-[#2D6A4F] font-semibold mb-1 block">Player X</label>
         <input id="name-x-input" type="text" maxlength="16" placeholder="Player X"
-          class="w-full p-2.5 bg-slate-800 border border-teal-800 rounded-lg text-white placeholder-slate-500
-                 focus:ring-2 focus:ring-teal-400 outline-none text-sm"/>
+          class="w-full p-2.5 bg-stone-200/50 border border-[#2D6A4F]/30 rounded-lg text-stone-900 placeholder-stone-400
+                 focus:ring-2 focus:ring-[#2D6A4F] outline-none text-sm"/>
       </div>
       <div>
-        <label class="text-xs text-rose-300 font-semibold mb-1 block">Player O</label>
+        <label class="text-xs text-[#6B2737] font-semibold mb-1 block">Player O</label>
         <input id="name-o-input" type="text" maxlength="16" placeholder="Player O"
-          class="w-full p-2.5 bg-slate-800 border border-rose-800 rounded-lg text-white placeholder-slate-500
-                 focus:ring-2 focus:ring-rose-400 outline-none text-sm"/>
+          class="w-full p-2.5 bg-stone-200/50 border border-[#6B2737]/30 rounded-lg text-stone-900 placeholder-stone-400
+                 focus:ring-2 focus:ring-[#6B2737] outline-none text-sm"/>
       </div>
     </div>
     <div class="flex justify-end gap-2">
@@ -333,7 +382,7 @@ body{
 <div id="keys-modal" class="modal-backdrop" style="display:none" role="dialog" aria-modal="true" aria-label="Keyboard Shortcuts">
   <div class="panel-strong rounded-xl p-7 max-w-xs w-full shadow-2xl animate-pop-in">
     <h3 class="text-lg font-bold mb-4">Keyboard Shortcuts</h3>
-    <div class="flex flex-col gap-2 text-sm text-slate-300 mb-5">
+    <div class="flex flex-col gap-2 text-sm text-stone-700 mb-5">
       <div class="flex justify-between"><span>Undo</span><kbd class="kbd">U</kbd></div>
       <div class="flex justify-between"><span>Reset</span><kbd class="kbd">R</kbd></div>
       <div class="flex justify-between"><span>Dismiss overlay</span><kbd class="kbd">Esc</kbd></div>
@@ -354,12 +403,12 @@ body{
   <!-- Header -->
   <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
     <div>
-      <div class="chip inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs text-slate-300">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 online-dot"></span>
+      <div class="chip inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs text-stone-700">
+        <span class="w-2 h-2 rounded-full bg-[#2D6A4F] online-dot"></span>
         Online · AI · Autosave · Replay
       </div>
       <h1 class="text-2xl md:text-3xl font-bold mt-2 tracking-tight">Ultimate Tic Tac Toe
-        <span class="text-xs font-normal text-slate-400 ml-2">Pro Edition</span>
+        <span class="text-xs font-normal text-stone-600 ml-2">Pro Edition</span>
       </h1>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
@@ -372,24 +421,24 @@ body{
   <!-- Status bar -->
   <div id="status-bar" class="mb-5" role="status" aria-live="polite">
     <span id="sb-x" class="status-player status-x">X</span>
-    <span class="text-slate-400">vs</span>
+    <span class="text-stone-600">vs</span>
     <span id="sb-o" class="status-player status-o">O</span>
-    <span class="text-slate-400 mx-1">·</span>
+    <span class="text-stone-600 mx-1">·</span>
     <span id="sb-turn">Turn: <strong>X</strong></span>
     <span id="sb-mode" class="chip px-2 py-0.5 rounded-full text-xs"></span>
-    <span id="sb-ai-tag" class="hidden text-amber-400 text-xs font-semibold"></span>
+    <span id="sb-ai-tag" class="hidden text-[#C78D1E] text-xs font-semibold"></span>
     <span id="sb-thinking" class="hidden">
       <span class="status-thinking">↻</span>
-      <span class="text-amber-400 text-xs">AI thinking…</span>
+      <span class="text-[#C78D1E] text-xs">AI thinking…</span>
     </span>
-    <span id="sb-online-tag" class="hidden text-xs text-cyan-300 font-semibold"></span>
+    <span id="sb-online-tag" class="hidden text-xs text-[#B44D3E] font-semibold"></span>
     <!-- Timer ring -->
     <span id="sb-timer-wrap" class="hidden items-center gap-1">
       <svg width="22" height="22" viewBox="0 0 36 36" class="timer-ring">
         <circle cx="18" cy="18" r="15.9" stroke-width="3.5" class="timer-track"/>
         <circle id="timer-arc" cx="18" cy="18" r="15.9" stroke-width="3.5" class="timer-fill" stroke="var(--accent2)"/>
       </svg>
-      <span id="sb-timer-val" class="text-xs font-bold text-amber-300">30</span>
+      <span id="sb-timer-val" class="text-xs font-bold text-[#C78D1E]">30</span>
     </span>
   </div>
 
@@ -397,35 +446,35 @@ body{
   <div class="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
 
     <!-- ── SIDEBAR ─────────────────────────────────────────── -->
-    <aside id="sidebar" class="panel rounded-2xl p-4 flex flex-col gap-4 sidebar-hidden-mobile">
+    <aside id="sidebar" class="panel rounded-2xl p-5 flex flex-col gap-2 sidebar-hidden-mobile">
 
       <!-- Drawer tabs -->
-      <div class="flex gap-2">
-        <button data-drawer="player" class="drawer-tab btn btn-slate flex-1 justify-center">👤 Player</button>
-        <button data-drawer="ai"     class="drawer-tab btn btn-slate flex-1 justify-center">🤖 AI</button>
-        <button data-drawer="tools"  class="drawer-tab btn btn-slate flex-1 justify-center">🔧 Tools</button>
+      <div class="flex p-1 bg-stone-200/50 rounded-xl mb-2">
+        <button data-drawer="player" class="drawer-tab flex-1 py-2 text-xs font-semibold text-stone-600 rounded-lg transition-all hover:text-stone-900">👤 Play</button>
+        <button data-drawer="ai"     class="drawer-tab flex-1 py-2 text-xs font-semibold text-stone-600 rounded-lg transition-all hover:text-stone-900">🤖 AI</button>
+        <button data-drawer="tools"  class="drawer-tab flex-1 py-2 text-xs font-semibold text-stone-600 rounded-lg transition-all hover:text-stone-900">🔧 Tools</button>
       </div>
 
       <!-- ─ Player drawer ─ -->
-      <div id="drawer-player" class="drawer rounded-xl p-4 hidden">
-        <p class="text-xs uppercase tracking-widest text-slate-500 mb-3">Mode</p>
-        <div class="flex flex-col gap-2">
-          <button data-mode="PVP"    class="mode-btn btn btn-slate justify-start">🧑‍🤝‍🧑 Offline (Human vs Human)</button>
-          <button data-mode="ONLINE" class="mode-btn btn btn-slate justify-start">🌐 Online (Human vs Human)</button>
+      <div id="drawer-player" class="drawer hidden">
+        <p class="text-xs uppercase tracking-widest text-stone-500 mb-3 font-semibold">Mode</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button data-mode="PVP"    class="mode-btn btn btn-slate justify-center text-xs py-2">🧑‍🤝‍🧑 Offline</button>
+          <button data-mode="ONLINE" class="mode-btn btn btn-slate justify-center text-xs py-2">🌐 Online</button>
         </div>
 
-        <div class="mt-4">
-          <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">Player Names</p>
+        <div class="mt-5">
+          <p class="text-xs uppercase tracking-widest text-stone-500 mb-2 font-semibold">Player Names</p>
           <div class="flex gap-2">
-            <div class="name-badge name-badge-x flex-1 truncate" id="disp-name-x">✕ Player X</div>
-            <div class="name-badge name-badge-o flex-1 truncate" id="disp-name-o">○ Player O</div>
-            <button id="edit-names-btn" class="btn btn-slate text-xs">Edit</button>
+            <div class="name-badge name-badge-x flex-1 truncate justify-center" id="disp-name-x">✕ Player X</div>
+            <div class="name-badge name-badge-o flex-1 truncate justify-center" id="disp-name-o">○ Player O</div>
+            <button id="edit-names-btn" class="btn btn-slate px-3 text-xs" title="Edit Names">✎</button>
           </div>
         </div>
 
-        <div class="mt-4">
-          <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">Turn Timer</p>
-          <div class="flex flex-wrap gap-2">
+        <div class="mt-5">
+          <p class="text-xs uppercase tracking-widest text-stone-500 mb-2 font-semibold">Turn Timer</p>
+          <div class="grid grid-cols-4 gap-2">
             <button data-timer="0"  class="timer-btn btn btn-slate text-xs">Off</button>
             <button data-timer="15" class="timer-btn btn btn-slate text-xs">15s</button>
             <button data-timer="30" class="timer-btn btn btn-slate text-xs">30s</button>
@@ -433,54 +482,55 @@ body{
           </div>
         </div>
 
-        <div class="mt-4" id="online-panel">
-          <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">Online Room</p>
-          <div class="flex flex-wrap gap-2">
+        <div class="mt-5" id="online-panel">
+          <p class="text-xs uppercase tracking-widest text-stone-500 mb-2 font-semibold">Online Room</p>
+          <div class="flex flex-col gap-2">
             <input id="room-input" type="text" placeholder="Room code (auto-gen if empty)"
-              class="flex-1 min-w-[140px] p-2 bg-slate-800 border border-slate-700 rounded-lg
-                     text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-400 outline-none text-xs"
+              class="w-full p-2 bg-stone-200/70 border border-stone-300/50 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-1 focus:ring-[#C78D1E] outline-none text-xs"
               aria-label="Room code"/>
-            <button id="create-room-btn" class="btn btn-emerald text-xs">Create</button>
-            <button id="join-room-btn"   class="btn btn-cyan text-xs">Join</button>
-            <button id="leave-room-btn"  class="btn btn-rose text-xs hidden">Leave</button>
-            <button id="wake-btn"        class="btn btn-amber text-xs" title="Wake up free-tier server">Wake</button>
+            <div class="flex gap-2">
+              <button id="create-room-btn" class="flex-1 btn btn-emerald justify-center text-xs">Create</button>
+              <button id="join-room-btn"   class="flex-1 btn btn-cyan justify-center text-xs">Join</button>
+              <button id="leave-room-btn"  class="flex-1 btn btn-rose justify-center text-xs hidden">Leave</button>
+              <button id="wake-btn"        class="btn btn-amber text-xs px-2" title="Wake up free-tier server">⚡</button>
+            </div>
           </div>
-          <div id="online-status" class="mt-2 text-xs text-slate-400" aria-live="polite">Not connected.</div>
-          <div id="online-reconnect" class="mt-1 text-xs text-amber-300 hidden" aria-live="polite">Reconnecting…</div>
-          <div id="ping-display" class="mt-1 text-xs text-slate-500 hidden">Ping: <span id="ping-val">—</span>ms</div>
+          <div id="online-status" class="mt-2 text-xs text-stone-600" aria-live="polite">Not connected.</div>
+          <div id="online-reconnect" class="mt-1 text-xs text-[#C78D1E] hidden" aria-live="polite">Reconnecting…</div>
+          <div id="ping-display" class="mt-1 text-xs text-stone-500 hidden">Ping: <span id="ping-val">—</span>ms</div>
         </div>
       </div>
 
       <!-- ─ AI drawer ─ -->
-      <div id="drawer-ai" class="drawer rounded-xl p-4 hidden">
-        <p class="text-xs uppercase tracking-widest text-slate-500 mb-3">AI Mode</p>
-        <div class="flex flex-col gap-2 mb-4">
-          <button data-mode="PVAI"  class="mode-btn btn btn-slate justify-start">🎮 Player vs AI</button>
-          <button data-mode="AIVAI" class="mode-btn btn btn-slate justify-start">⚡ AI vs AI</button>
+      <div id="drawer-ai" class="drawer hidden">
+        <p class="text-xs uppercase tracking-widest text-stone-500 mb-3 font-semibold">AI Mode</p>
+        <div class="grid grid-cols-2 gap-2 mb-5">
+          <button data-mode="PVAI"  class="mode-btn btn btn-slate justify-center text-xs py-2">🎮 P vs AI</button>
+          <button data-mode="AIVAI" class="mode-btn btn btn-slate justify-center text-xs py-2">⚡ AI vs AI</button>
         </div>
 
         <!-- PVAI difficulty -->
         <div id="pvai-panel" class="hidden">
-          <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">AI Difficulty</p>
+          <p class="text-xs uppercase tracking-widest text-stone-500 mb-2">AI Difficulty</p>
           <div class="grid grid-cols-2 gap-2">
             <button data-diff="EASY"        class="diff-btn btn btn-slate text-xs">😊 Easy</button>
             <button data-diff="MEDIUM"      class="diff-btn btn btn-slate text-xs">🤔 Medium</button>
             <button data-diff="HARD"        class="diff-btn btn btn-slate text-xs">😤 Hard</button>
             <button data-diff="GRANDMASTER" class="diff-btn btn btn-slate text-xs">🔥 Grandmaster</button>
           </div>
-          <p class="mt-2 text-xs text-slate-500">Grandmaster: iterative deepening + transposition table.</p>
+          <p class="mt-2 text-xs text-stone-500">Grandmaster: iterative deepening + transposition table.</p>
         </div>
 
         <!-- AIVAI difficulty per side -->
         <div id="aivai-panel" class="hidden">
-          <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">AI X Difficulty</p>
+          <p class="text-xs uppercase tracking-widest text-stone-500 mb-2">AI X Difficulty</p>
           <div class="grid grid-cols-2 gap-2 mb-3">
             <button data-player="X" data-diff="EASY"        class="aivai-btn btn btn-slate text-xs">😊 Easy</button>
             <button data-player="X" data-diff="MEDIUM"      class="aivai-btn btn btn-slate text-xs">🤔 Medium</button>
             <button data-player="X" data-diff="HARD"        class="aivai-btn btn btn-slate text-xs">😤 Hard</button>
             <button data-player="X" data-diff="GRANDMASTER" class="aivai-btn btn btn-slate text-xs">🔥 GM</button>
           </div>
-          <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">AI O Difficulty</p>
+          <p class="text-xs uppercase tracking-widest text-stone-500 mb-2">AI O Difficulty</p>
           <div class="grid grid-cols-2 gap-2">
             <button data-player="O" data-diff="EASY"        class="aivai-btn btn btn-slate text-xs">😊 Easy</button>
             <button data-player="O" data-diff="MEDIUM"      class="aivai-btn btn btn-slate text-xs">🤔 Medium</button>
@@ -491,78 +541,78 @@ body{
 
         <!-- AI thinking progress -->
         <div id="ai-thinking-panel" class="mt-4 hidden">
-          <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">AI Thinking</p>
+          <p class="text-xs uppercase tracking-widest text-stone-500 mb-2">AI Thinking</p>
           <div class="progress-bar"><div id="ai-prog-fill" class="progress-fill"></div></div>
-          <p id="ai-depth-lbl" class="mt-1 text-xs text-slate-400">Depth: 0 · Nodes: 0</p>
-          <p id="ai-tt-lbl" class="text-xs text-slate-500">TT hits: 0</p>
+          <p id="ai-depth-lbl" class="mt-1 text-xs text-stone-600">Depth: 0 · Nodes: 0</p>
+          <p id="ai-tt-lbl" class="text-xs text-stone-500">TT hits: 0</p>
         </div>
       </div>
 
       <!-- ─ Tools drawer ─ -->
-      <div id="drawer-tools" class="drawer rounded-xl p-4 hidden">
-        <p class="text-xs uppercase tracking-widest text-slate-500 mb-3">Actions</p>
-        <div class="flex flex-wrap gap-2 mb-4">
-          <button id="undo-btn"    class="btn btn-amber"   disabled>↩ Undo</button>
-          <button id="reset-btn"   class="btn btn-slate">↺ Reset</button>
-          <button id="share-btn"   class="btn btn-cyan">🔗 Share</button>
-          <button id="load-btn"    class="btn btn-rose">📂 Load</button>
-          <button id="theme-btn"   class="btn btn-slate">🎨 Theme</button>
-          <button id="analyze-btn" class="btn btn-slate">🔍 Analyze</button>
+      <div id="drawer-tools" class="drawer hidden">
+        <p class="text-xs uppercase tracking-widest text-stone-500 mb-3 font-semibold">Actions</p>
+        <div class="grid grid-cols-2 gap-2 mb-5">
+          <button id="undo-btn"    class="btn btn-amber justify-center text-xs py-2"   disabled>↩ Undo</button>
+          <button id="reset-btn"   class="btn btn-slate justify-center text-xs py-2">↺ Reset</button>
+          <button id="share-btn"   class="btn btn-cyan justify-center text-xs py-2">🔗 Share</button>
+          <button id="load-btn"    class="btn btn-rose justify-center text-xs py-2">📂 Load</button>
+          <button id="theme-btn"   class="btn btn-slate justify-center text-xs py-2">🎨 Theme</button>
+          <button id="analyze-btn" class="btn btn-slate justify-center text-xs py-2">🔍 Analyze</button>
         </div>
 
         <!-- Audio -->
         <div class="flex items-center gap-3 mb-4">
           <label class="relative inline-flex items-center cursor-pointer">
             <input id="audio-toggle" type="checkbox" class="sr-only peer" aria-label="Toggle ambient audio"/>
-            <div class="w-9 h-5 bg-slate-700 peer-checked:bg-amber-500 rounded-full transition-colors
+            <div class="w-9 h-5 bg-stone-300 peer-checked:bg-[#C78D1E] rounded-full transition-colors
                         after:content-[''] after:absolute after:top-0.5 after:left-0.5
                         after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all
                         peer-checked:after:translate-x-4"></div>
           </label>
-          <span class="text-xs text-slate-400">Ambient Audio</span>
+          <span class="text-xs text-stone-600">Ambient Audio</span>
         </div>
 
         <!-- Stats -->
-        <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">Stats (vs AI)</p>
+        <p class="text-xs uppercase tracking-widest text-stone-500 mb-2">Stats (vs AI)</p>
         <div class="grid grid-cols-3 gap-1 mb-1">
-          <div class="text-center bg-emerald-900/20 rounded-lg p-2">
-            <div id="sw" class="text-lg font-bold text-emerald-400">0</div>
-            <div class="text-xs text-slate-500">Wins</div>
+          <div class="text-center bg-[#2D6A4F]/10 rounded-lg p-2">
+            <div id="sw" class="text-lg font-bold text-[#2D6A4F]">0</div>
+            <div class="text-xs text-stone-500">Wins</div>
           </div>
-          <div class="text-center bg-rose-900/20 rounded-lg p-2">
-            <div id="sl" class="text-lg font-bold text-rose-400">0</div>
-            <div class="text-xs text-slate-500">Losses</div>
+          <div class="text-center bg-[#6B2737]/10 rounded-lg p-2">
+            <div id="sl" class="text-lg font-bold text-[#6B2737]">0</div>
+            <div class="text-xs text-stone-500">Losses</div>
           </div>
-          <div class="text-center bg-slate-800/60 rounded-lg p-2">
-            <div id="sd" class="text-lg font-bold text-slate-300">0</div>
-            <div class="text-xs text-slate-500">Draws</div>
+          <div class="text-center bg-stone-200/50 rounded-lg p-2">
+            <div id="sd" class="text-lg font-bold text-stone-700">0</div>
+            <div class="text-xs text-stone-500">Draws</div>
           </div>
         </div>
-        <div class="text-xs text-slate-400 mb-3">
-          Elo: <span id="se" class="font-bold text-amber-300">1000</span>
+        <div class="text-xs text-stone-600 mb-3">
+          Elo: <span id="se" class="font-bold text-[#C78D1E]">1000</span>
         </div>
 
         <!-- Match history -->
-        <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">Recent Matches</p>
-        <div id="match-history" class="text-xs text-slate-400 space-y-1 max-h-28 overflow-auto pr-1"></div>
+        <p class="text-xs uppercase tracking-widest text-stone-500 mb-2">Recent Matches</p>
+        <div id="match-history" class="text-xs text-stone-600 space-y-1 max-h-28 overflow-auto pr-1"></div>
 
         <!-- Replay controls -->
-        <div id="replay-panel" class="hidden mt-4">
-          <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">Replay</p>
-          <div class="flex flex-wrap gap-2 mb-2">
-            <button id="rp-play"  class="btn btn-emerald text-xs">▶ Play</button>
-            <button id="rp-pause" class="btn btn-amber text-xs">⏸ Pause</button>
-            <button id="rp-step"  class="btn btn-slate text-xs">⏭ Step</button>
-            <button id="rp-exit"  class="btn btn-rose text-xs">✕ Exit</button>
+        <div id="replay-panel" class="hidden mt-5">
+          <p class="text-xs uppercase tracking-widest text-stone-500 mb-2 font-semibold">Replay</p>
+          <div class="grid grid-cols-4 gap-1 mb-2">
+            <button id="rp-play"  class="btn btn-emerald text-xs justify-center px-0">▶</button>
+            <button id="rp-pause" class="btn btn-amber text-xs justify-center px-0">⏸</button>
+            <button id="rp-step"  class="btn btn-slate text-xs justify-center px-0">⏭</button>
+            <button id="rp-exit"  class="btn btn-rose text-xs justify-center px-0">✕</button>
           </div>
           <input id="rp-scrub" type="range" min="0" max="0" value="0" class="w-full accent-amber-400"/>
-          <div id="rp-progress" class="mt-1 text-xs text-slate-400">0 / 0</div>
-          <div id="rp-moves" class="mt-2 text-xs text-slate-500 space-y-0.5 max-h-24 overflow-auto pr-1"></div>
+          <div id="rp-progress" class="mt-1 text-xs text-stone-600">0 / 0</div>
+          <div id="rp-moves" class="mt-2 text-xs text-stone-500 space-y-0.5 max-h-24 overflow-auto pr-1"></div>
         </div>
       </div>
 
       <!-- Keyboard hint footer -->
-      <div class="text-xs text-slate-600 text-center mt-auto pt-2">
+      <div class="text-xs text-stone-400 text-center mt-auto pt-2">
         Press <kbd class="kbd">?</kbd> for keyboard shortcuts
       </div>
     </aside>
@@ -650,10 +700,11 @@ const OPENING_BOOK = {
 
 /* Themes: [x-color, o-color, accent] */
 const THEMES = {
+  'Botanical': ['#2D6A4F','#B44D3E','#C78D1E'],
   'Neon':     ['#2dd4bf','#fb7185','#f59e0b'],
   'Ocean':    ['#38bdf8','#a78bfa','#34d399'],
   'Fire':     ['#f97316','#fbbf24','#ef4444'],
-  'Mono':     ['#e2e8f0','#94a3b8','#64748b'],
+  'Mono':     ['#e2e8f0','#94a3b8','#8B7D6B'],
   'Sakura':   ['#f9a8d4','#c084fc','#fb7185'],
   'Forest':   ['#4ade80','#86efac','#22d3ee'],
 };
@@ -689,7 +740,7 @@ const ui = {   // ui state
   timerRemaining:    0,
   timerInterval:     null,
   names:       {X:'Player X', O:'Player O'},
-  theme:       'Neon',
+  theme:       'Botanical',
   isReplay:    false,
   replayIdx:   0,
   replayTimer: null,
@@ -1425,12 +1476,12 @@ const patchGrid=()=>{
     if(mw&&!wasWon){
       if(!overlayEl){
         overlayEl=document.createElement('div');
-        overlayEl.className='board-overlay absolute inset-0 flex items-center justify-center bg-slate-950/82 backdrop-blur-[2px] rounded-xl z-10 animate-fade-in';
+        overlayEl.className='board-overlay absolute inset-0 flex items-center justify-center bg-[rgba(20,34,56,0.82)] backdrop-blur-[2px] rounded-xl z-10 animate-fade-in';
         boardEl.appendChild(overlayEl);
       }
-      overlayEl.innerHTML=mw==='X'?getXIcon('w-1/2 h-1/2 text-teal-300'):
-                          mw==='O'?getOIcon('w-1/2 h-1/2 text-rose-300'):
-                          '<span class="text-4xl font-black text-slate-500/60">D</span>';
+      overlayEl.innerHTML=mw==='X'?getXIcon('w-1/2 h-1/2 text-[#7ab8d4]'):
+                          mw==='O'?getOIcon('w-1/2 h-1/2 text-[#d4826a]'):
+                          '<span class="text-4xl font-black text-[rgba(122,184,212,0.45)]">D</span>';
       macroWinners[m]=mw;
     } else if(!mw&&wasWon) {
       overlayEl?.remove(); macroWinners[m]=null;
@@ -1438,9 +1489,6 @@ const patchGrid=()=>{
 
     // patch cells using cached DOM references
     for(let i=0;i<9;i++){
-      if(domBoards&&domBoards[m][i]===gs.boards[m][i]&&
-         macro[m]===macroWinners[m]) continue; // skip unchanged
-
       const cellEl=cellElements?.[m]?.[i];
       if(!cellEl) continue;
 
@@ -1454,11 +1502,11 @@ const patchGrid=()=>{
 
 const buildBoardClass=(m,mw,isActive,isTarget,winner)=>{
   let c='relative aspect-square grid grid-cols-3 grid-rows-3 gap-1 p-1.5 rounded-xl transition-all duration-300 border-2 shadow-lg ';
-  if(isActive)         c+='border-amber-400 bg-slate-900/72 macro-active ';
-  else if(mw==='X')    c+='border-teal-400 bg-teal-950/22 ';
-  else if(mw==='O')    c+='border-rose-400 bg-rose-950/22 ';
-  else if(mw==='D')    c+='border-slate-600 bg-slate-900/60 ';
-  else                 c+='border-transparent bg-slate-900/52 ';
+  if(isActive)         c+='border-[#c9a84c] bg-[rgba(20,36,58,0.85)] macro-active ';
+  else if(mw==='X')    c+='border-[#7ab8d4] bg-[rgba(122,184,212,0.10)] ';
+  else if(mw==='O')    c+='border-[#d4826a] bg-[rgba(212,130,106,0.10)] ';
+  else if(mw==='D')    c+='border-[rgba(122,184,212,0.20)] bg-[rgba(255,255,255,0.04)] ';
+  else                 c+='border-transparent bg-[rgba(16,28,46,0.50)] ';
   if(!winner&&!isTarget&&!mw) c+='macro-dim ';
   return c;
 };
@@ -1561,10 +1609,13 @@ const renderGame=()=>{
 const renderStatusBar=()=>{
   const active=getActive();
   const nx=ui.names.X, no=ui.names.O;
+  document.body.dataset.nextBoard = gs.nextBoard === null ? 'any' : String(gs.nextBoard);
+  document.body.dataset.xIsNext = String(gs.xIsNext);
+  document.body.dataset.winner = gs.winner || '';
   document.getElementById('sb-x').textContent=nx;
   document.getElementById('sb-o').textContent=no;
   const sbTurnStr = document.getElementById('sb-turn');
-  sbTurnStr.innerHTML = `Turn: <strong class="${active==='X'?'text-teal-300':'text-rose-300'}"></strong>`;
+  sbTurnStr.innerHTML = `Turn: <strong class="${active==='X'?'text-[#2D6A4F]':'text-[#6B2737]'}"></strong>`;
   sbTurnStr.querySelector('strong').textContent = active==='X'?nx:no;
 
   const modeLabels={PVP:'Offline',ONLINE:'Online',PVAI:'vs AI',AIVAI:'AI vs AI'};
@@ -1592,20 +1643,20 @@ const renderWinnerOverlay=()=>{
 
   stopTurnTimer();
   const w=gs.winner;
-  const color=w==='X'?'text-teal-300':w==='O'?'text-rose-300':'text-slate-400';
+  const color=w==='X'?'text-[#6B2737]':w==='O'?'text-[#6B2737]':'text-stone-600';
   const name=w==='X'?ui.names.X:w==='O'?ui.names.O:null;
   const msg=w==='D'?"It's a Draw!":w?`${name} Wins!`:'';
 
   ov.innerHTML=`
     ${getTrophyIcon(`w-20 h-20 mb-3 ${color}`)}
-    <h2 class="text-4xl md:text-5xl font-black text-white mb-2 drop-shadow-lg animate-pop-in" id="ov-msg-title"></h2>
+    <h2 class="text-4xl md:text-5xl font-black text-stone-900 mb-2 drop-shadow-lg animate-pop-in" id="ov-msg-title"></h2>
     <div class="flex flex-wrap gap-2 mt-5 justify-center">
       <button id="ov-new"     class="btn btn-primary">↺ New Game</button>
       <button id="ov-dismiss" class="btn btn-slate">View Board</button>
       <button id="ov-replay"  class="btn btn-amber">▶ Replay</button>
       <button id="ov-share"   class="btn btn-cyan">🔗 Share</button>
     </div>
-    <p class="text-xs text-slate-500 mt-4">Press <kbd class="kbd">Esc</kbd> to dismiss</p>
+    <p class="text-xs text-stone-500 mt-4">Press <kbd class="kbd">Esc</kbd> to dismiss</p>
   `;
   document.getElementById('ov-msg-title').textContent = msg;
   ov.classList.remove('hidden');
@@ -1795,7 +1846,7 @@ const renderStats=()=>{
   h.innerHTML=items.length?items.map(e=>{
     const icon=e.result==='win'?'✅':e.result==='loss'?'❌':'➖';
     return `<div>${icon} ${e.result} vs ${e.opponent} · ${new Date(e.at).toLocaleDateString()}</div>`;
-  }).join(''):'<div class="text-slate-600">No matches yet.</div>';
+  }).join(''):'<div class="text-stone-400">No matches yet.</div>';
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -1843,7 +1894,7 @@ const renderReplayMoves=(moves)=>{
   if(!el) return;
   el.innerHTML=moves.map(({macro,micro},idx)=>{
     const p=idx%2===0?'X':'O';
-    const cl=idx===ui.replayIdx-1?'text-amber-300':'text-slate-500';
+    const cl=idx===ui.replayIdx-1?'text-[#C78D1E]':'text-stone-500';
     return `<div class="${cl}">#${idx+1}: ${p} → board ${macro+1}, cell ${micro+1}</div>`;
   }).join('');
 };
@@ -1952,7 +2003,7 @@ const sendNetState=()=>{
 ═══════════════════════════════════════════════════════════ */
 const applyTheme=(name)=>{
   ui.theme=name;
-  const [x,o,a]=THEMES[name]||THEMES.Neon;
+  const [x,o,a]=THEMES[name]||THEMES.Botanical;
   document.documentElement.style.setProperty('--x-color',x);
   document.documentElement.style.setProperty('--o-color',o);
   document.documentElement.style.setProperty('--accent',a);
@@ -2102,6 +2153,45 @@ const closeAllModals=()=>{
   ['load-modal','name-modal','theme-modal','keys-modal'].forEach(closeModal);
 };
 
+window.__utttResearch = {
+  configure({mode='PVAI', diff='GRANDMASTER', xDiff='GRANDMASTER', oDiff='GRANDMASTER', timeBudget=2200}={}) {
+    ui.gameMode = mode;
+    ui.aiDiff = diff;
+    ui.aiDiffX = xDiff;
+    ui.aiDiffO = oDiff;
+    ui.aiTimeBudget = timeBudget;
+    resetGame();
+  },
+  place(macro, micro) {
+    handlePlace(macro, micro);
+  },
+  async bestMove(budget=2200) {
+    const prevBudget = ui.aiTimeBudget;
+    ui.aiTimeBudget = budget;
+    try {
+      return await getAiMove(cloneBoards(gs.boards), gs.xIsNext, gs.nextBoard);
+    } finally {
+      ui.aiTimeBudget = prevBudget;
+    }
+  },
+  state() {
+    return {
+      boards: cloneBoards(gs.boards),
+      xIsNext: gs.xIsNext,
+      nextBoard: gs.nextBoard,
+      winner: gs.winner,
+      moves: [...gs.moves],
+      macro: getMacroBoard(gs.boards),
+      thinking: ui.isAiThinking,
+      mode: ui.gameMode,
+      diff: ui.aiDiff,
+      aiDepth: ui.aiDepth,
+      aiNodes: ui.aiNodes,
+      aiTTHits: ui.aiTTHits,
+    };
+  },
+};
+
 /* ═══════════════════════════════════════════════════════════
    SVG ICONS
 ═══════════════════════════════════════════════════════════ */
@@ -2136,7 +2226,7 @@ const openDrawer=(name)=>{
     document.getElementById(`drawer-${d}`)?.classList.toggle('hidden',d!==name);
   });
   document.querySelectorAll('.drawer-tab').forEach(t=>{
-    t.classList.toggle('mode-active',t.dataset.drawer===name);
+    t.classList.toggle('tab-active',t.dataset.drawer===name);
   });
   ui.activeDrawer=name;
 };
@@ -2178,12 +2268,13 @@ window.addEventListener('DOMContentLoaded',()=>{
       gs.xIsNext = d.xIsNext;
       gs.nextBoard = d.nextBoard;
       gs.moves = [];
-      renderGame();
+      buildGrid(); renderGame();
     } else {
       if (!loadPersistedGame()) resetGame();
     }
   } else {
     if (!loadPersistedGame()) resetGame();
+    else { buildGrid(); renderGame(); }
   }
 
   /* ─ Open default drawer ─ */
